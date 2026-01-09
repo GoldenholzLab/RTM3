@@ -1,0 +1,2 @@
+numPatients,numTrials,recruitmentMonths,baselineMonths,testMonths,sensitivity,FAR,eligibility_rate,min_monthly_rate,max_szfree_days,treatment_effect,use_baselineTF,correct_FAR,mean_drugMPC,mean_placeboMPC,mean_diffMPC,mean_drugRR50,mean_placeboRR50,mean_diffRR50,successRR50,successMPC,mean_mSF,mean_eligibility_rate,mean_failed_baseline_rate,mean_fraction_RTM
+250,100000,36,2,3,1.0,0.0,4,3,25,0.2,True,False,40.297904963851956,25.39225414047279,14.905650823379162,39.125264,28.363927999999998,10.761335999999998,38.964,75.467,5.343126,41.093725388693976,0.0,0.4188745600000001

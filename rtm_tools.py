@@ -30,8 +30,6 @@ def treat_one_patient(diaryTEST, treatment_effect):
 # such that realistic seizure frequencies are chosen
 def choose_seizure_frequency():
     return get_mSF(requested_msf=-1)
-       
-
 
 
 def generated_one_complex_patient_v2(use_baseline, 
