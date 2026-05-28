@@ -1,0 +1,90 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1800" height="1125" viewBox="0 0 1800 1125">
+  <defs>
+    <marker id="arrow" markerWidth="16" markerHeight="16" refX="14" refY="8" orient="auto" markerUnits="strokeWidth">
+      <path d="M 1 1 L 15 8 L 1 15 z" fill="#263238"/>
+    </marker>
+    <marker id="arrow-small" markerWidth="8" markerHeight="8" refX="7" refY="4" orient="auto" markerUnits="strokeWidth">
+      <path d="M 1 1 L 7 4 L 1 7 z" fill="#263238"/>
+    </marker>
+    <marker id="arrow-red" markerWidth="16" markerHeight="16" refX="14" refY="8" orient="auto" markerUnits="strokeWidth">
+      <path d="M 1 1 L 15 8 L 1 15 z" fill="#c94b44"/>
+    </marker>
+    <marker id="arrow-blue" markerWidth="16" markerHeight="16" refX="14" refY="8" orient="auto" markerUnits="strokeWidth">
+      <path d="M 1 1 L 15 8 L 1 15 z" fill="#1f6fb2"/>
+    </marker>
+    <style>
+      .title { font: 700 58px Arial, Helvetica, sans-serif; fill: #101820; }
+      .subtitle { font: 700 34px Arial, Helvetica, sans-serif; fill: #4b5563; }
+      .h { font: 700 46px Arial, Helvetica, sans-serif; fill: #101820; }
+      .body { font: 700 35px Arial, Helvetica, sans-serif; fill: #25313b; }
+      .label { font: 700 30px Arial, Helvetica, sans-serif; fill: #25313b; }
+      .small { font: 700 25px Arial, Helvetica, sans-serif; fill: #4b5563; }
+      .metric { font: 700 47px Arial, Helvetica, sans-serif; fill: #101820; }
+      .box { stroke-width: 3; rx: 8; }
+    </style>
+  </defs>
+
+  <rect width="1800" height="1125" fill="#ffffff"/>
+
+  <text x="900" y="82" text-anchor="middle" class="title">Why noisy measurement raises placebo response</text>
+  <text x="900" y="137" text-anchor="middle" class="subtitle">Higher FAR or lower sensitivity impacts RTM</text>
+
+  <!-- Inputs -->
+  <rect x="80" y="225" width="430" height="280" class="box" fill="#fff1ee" stroke="#d95d55"/>
+  <text x="295" y="302" text-anchor="middle" class="h">Higher FAR</text>
+  <text x="295" y="372" text-anchor="middle" class="body">false alarms</text>
+  <text x="295" y="427" text-anchor="middle" class="body">inflate baseline</text>
+
+  <rect x="80" y="620" width="430" height="280" class="box" fill="#edf6ff" stroke="#2d7fbe"/>
+  <text x="295" y="697" text-anchor="middle" class="h">Lower sensitivity</text>
+  <text x="295" y="767" text-anchor="middle" class="body">missed events</text>
+  <text x="295" y="817" text-anchor="middle" class="body">higher baseline</text>
+  <text x="295" y="862" text-anchor="middle" class="body">rates needed</text>
+
+  <!-- Shared mechanism -->
+  <rect x="640" y="215" width="550" height="700" class="box" fill="#fffbea" stroke="#d7a514"/>
+  <text x="915" y="294" text-anchor="middle" class="h">Eligibility filter</text>
+  <text x="915" y="356" text-anchor="middle" class="body">baseline must exceed</text>
+  <text x="915" y="401" text-anchor="middle" class="body">a threshold</text>
+
+  <line x1="740" y1="545" x2="1088" y2="545" stroke="#9ca3af" stroke-width="5" stroke-dasharray="18 13"/>
+  <text x="740" y="590" class="small">threshold</text>
+
+  <circle cx="780" cy="650" r="16" fill="#b7c0ca"/>
+  <circle cx="850" cy="708" r="16" fill="#b7c0ca"/>
+  <circle cx="918" cy="640" r="16" fill="#b7c0ca"/>
+  <circle cx="990" cy="690" r="16" fill="#b7c0ca"/>
+  <circle cx="1060" cy="625" r="16" fill="#b7c0ca"/>
+
+  <circle cx="805" cy="495" r="20" fill="#e88d2a" stroke="#101820" stroke-width="3"/>
+  <circle cx="915" cy="458" r="20" fill="#e88d2a" stroke="#101820" stroke-width="3"/>
+  <circle cx="1030" cy="505" r="20" fill="#e88d2a" stroke="#101820" stroke-width="3"/>
+
+  <text x="915" y="795" text-anchor="middle" class="body">selected baseline</text>
+  <text x="915" y="850" text-anchor="middle" class="metric">higher than usual</text>
+
+  <!-- Follow-up and outcome -->
+  <rect x="1310" y="215" width="410" height="700" class="box" fill="#eef8f4" stroke="#1d9a72"/>
+  <text x="1515" y="294" text-anchor="middle" class="h">Placebo period</text>
+  <text x="1515" y="356" text-anchor="middle" class="body">no drug effect</text>
+
+  <line x1="1388" y1="505" x2="1640" y2="505" stroke="#8b949e" stroke-width="5" stroke-dasharray="14 12"/>
+  <text x="1648" y="514" class="small">usual</text>
+  <rect x="1405" y="410" width="92" height="150" fill="#e88d2a" stroke="#101820" stroke-width="3"/>
+  <rect x="1532" y="498" width="92" height="62" fill="#1d9a72" stroke="#101820" stroke-width="3"/>
+  <path d="M 1498 424 C 1515 440, 1518 468, 1530 494" fill="none" stroke="#263238" stroke-width="5" marker-end="url(#arrow-small)"/>
+  <text x="1518" y="398" text-anchor="middle" class="label">RTM</text>
+  <text x="1451" y="603" text-anchor="middle" class="small">baseline</text>
+  <text x="1578" y="603" text-anchor="middle" class="small">follow-up</text>
+
+  <line x1="1370" y1="660" x2="1660" y2="660" stroke="#c8ced6" stroke-width="3"/>
+  <text x="1515" y="735" text-anchor="middle" class="metric">More RTM</text>
+  <text x="1515" y="815" text-anchor="middle" class="metric">Higher placebo</text>
+  <text x="1515" y="875" text-anchor="middle" class="metric">response</text>
+
+  <!-- Arrows -->
+  <path d="M 510 365 C 565 365, 590 445, 632 482" fill="none" stroke="#c94b44" stroke-width="7" marker-end="url(#arrow-red)"/>
+  <path d="M 510 760 C 565 760, 590 650, 632 610" fill="none" stroke="#1f6fb2" stroke-width="7" marker-end="url(#arrow-blue)"/>
+  <path d="M 1195 565 C 1240 565, 1260 565, 1302 565" fill="none" stroke="#263238" stroke-width="7" marker-end="url(#arrow)"/>
+  <text x="1190" y="493" text-anchor="middle" class="label">back to usual</text>
+</svg>

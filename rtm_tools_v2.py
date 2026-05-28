@@ -12,6 +12,12 @@ from joblib import Parallel, delayed
 import scipy.stats as stats
 from itertools import groupby
 
+
+def _require_baseline_eligibility(use_baselineTF):
+    if not use_baselineTF:
+        raise ValueError('Pre-baseline eligibility is retired for this paper; use_baselineTF must be True.')
+
+
 # build one patient for trial as well as the recruitment period
 def sim_one_potential_patient(recruitmentMonths, baselineMonths, testMonths, sensitivity, FAR, rng):
     # inputs
@@ -61,7 +67,7 @@ def get_one_trial_patient(recruitmentMonths, baselineMonths, testMonths, sensiti
     #   sensitivity - sensitivity of the detection algorithm
     #   FAR - false alarm rate (false positives per day)
     #   treatment_effect - reduction in monthly seizure frequency due to treatment (0 to 1)
-    #   use_baselineTF - boolean, whether to use baseline true frequency to set treatment effect
+    #   use_baselineTF - retained for compatibility; must be True so eligibility is tested during baseline
     #   correct_FAR - boolean, whether to correct for FAR in treatment effect
     #   rng - random number generator to use (this is optional, one will be made in CHOCOLATES if needed)
     # outputs   
@@ -70,6 +76,7 @@ def get_one_trial_patient(recruitmentMonths, baselineMonths, testMonths, sensiti
     #   tries - number of attempts to find an eligible patient
     #   fails - number of times baseline period had zero seizures
 
+    _require_baseline_eligibility(use_baselineTF)
     keepGoing = True
     tries = 0
     fails = 0
@@ -172,7 +179,7 @@ def check_eligibility(fullDeviceDiary, recruitmentMonths, use_baselineTF,
     # inputs
     #   fullDeviceDiary - numpy array of daily detected seizure counts for the full patient period
     #   recruitmentMonths - number of months for recruitment period
-    #   use_baselineTF - boolean, whether to use baseline period in eligibility check
+    #   use_baselineTF - retained for compatibility; must be True so eligibility is tested during baseline
     #   correct_FAR - boolean, whether to correct for FAR in eligibility check
     #   eligibility_rate - fraction of mean monthly seizure frequency required for eligibility  
     #   min_monthly_rate - minimum monthly seizure frequency for eligibility
@@ -182,6 +189,7 @@ def check_eligibility(fullDeviceDiary, recruitmentMonths, use_baselineTF,
     # outputs
     #   eligibleTF - boolean, whether the patient is eligible
     #   baseline_start_idx - starting index of baseline period in fullDeviceDiary
+    _require_baseline_eligibility(use_baselineTF)
     search_start = 0
     search_end = recruitmentMonths * CONST.DAYS_PER_MONTH
     baseline_start_idx = np.nan
@@ -252,7 +260,7 @@ def build_one_trial(numPatients, recruitmentMonths, baselineMonths, testMonths, 
     #   sensitivity - sensitivity of the detection algorithm
     #   FAR - false alarm rate (false positives per day)
     #   treatment_effect - reduction in monthly seizure frequency due to treatment (0 to 1)
-    #   use_baselineTF - boolean, whether to use baseline true frequency to set treatment effect
+    #   use_baselineTF - retained for compatibility; must be True so eligibility is tested during baseline
     #   correct_FAR - boolean, whether to correct for FAR in treatment effect
     # outputs   
     #   PCs - list of percentage changes in seizure frequency after treatment for each patient
@@ -260,6 +268,7 @@ def build_one_trial(numPatients, recruitmentMonths, baselineMonths, testMonths, 
     #   total_tries - total number of attempts to find eligible patients
     #   total_fails - total number of times baseline period had zero seizures
 
+    _require_baseline_eligibility(use_baselineTF)
     rng = np.random.default_rng()
     drug_PCs, placebo_PCs, mSFs = [], [], []
     total_tries, total_fails, rtm_count = 0, 0, 0
@@ -351,11 +360,11 @@ def run_a_set_of_trials(numTrials, numPatients, recruitmentMonths, baselineMonth
     #   sensitivity - sensitivity of the detection algorithm
     #   FAR - false alarm rate (false positives per day)
     #   treatment_effect - reduction in monthly seizure frequency due to treatment (0 to 1)
-    #   use_baselineTF - boolean, whether to use baseline true frequency to set treatment effect
+    #   use_baselineTF - retained for compatibility; must be True so eligibility is tested during baseline
     #   correct_FAR - boolean, whether to correct for FAR in treatment effect
     # outputs:   
     #   all_results - list of dictionaries containing analysis results for each trial
-
+    _require_baseline_eligibility(use_baselineTF)
 
     all_results = Parallel(n_jobs=25)(
         delayed(build_one_trial)(
@@ -396,12 +405,12 @@ def run_a_set_of_trials(numTrials, numPatients, recruitmentMonths, baselineMonth
     }
     return pd.DataFrame(all_results), pd.DataFrame([summary])
 
-# does useBaste change things correctly?
+# baseline-only eligibility summary
 def test1(numTrials, numPatients, recruitmentMonths, baselineMonths, testMonths,
         sensitivity, FAR, eligibility_rate, min_monthly_rate, max_szfree_days,
         treatment_effect, correct_FAR, fn):
 
-    for i, use_baselineTF in enumerate([True, False]):
+    for i, use_baselineTF in enumerate([True]):
         allresults,summary = run_a_set_of_trials(numTrials, numPatients, recruitmentMonths, baselineMonths, testMonths,
             sensitivity, FAR, eligibility_rate, min_monthly_rate, max_szfree_days,
             treatment_effect, use_baselineTF, correct_FAR)
@@ -462,14 +471,14 @@ def diagnostic_baselineTF_patient_level(
     rng = np.random.default_rng(seed)
     rows = []
 
-    for use_baselineTF in [True, False]:
+    for use_baselineTF in [True]:
         for arm, this_treatment_effect in [('drug', treatment_effect), ('placebo', 0.0)]:
             for _ in trange(
                 num_patients_per_arm,
                 desc=f'Patients baselineTF={use_baselineTF} arm={arm}',
                 leave=False,
             ):
-                PC, mSF, tries, fails, debug = get_one_trial_patient(
+                PC, RTM_tf, mSF, tries, fails, debug = get_one_trial_patient(
                     recruitmentMonths,
                     baselineMonths,
                     testMonths,
@@ -494,6 +503,7 @@ def diagnostic_baselineTF_patient_level(
                         'baseline_sum': debug['baseline_sum'] if debug else np.nan,
                         'test_sum': debug['test_sum'] if debug else np.nan,
                         'baseline_start_idx': debug['baseline_start_idx'] if debug else np.nan,
+                        'RTM_tf': RTM_tf,
                         'mSF': mSF,
                         'tries': tries,
                         'fails': fails,
@@ -526,4 +536,3 @@ def diagnostic_baselineTF_patient_level(
     )
 
     return df, summary, placebo_q
-

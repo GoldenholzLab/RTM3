@@ -3,7 +3,21 @@ import pandas as pd
 import matplotlib.pyplot as plt
 import rtm_constants as CONST
 import seaborn as sns
+import matplotlib.lines as mlines
+from matplotlib.lines import Line2D
 
+
+def _coerce_bool(series):
+    if series.dtype == bool:
+        return series
+    values = series.astype(str).str.strip().str.upper()
+    true_set = {'TRUE', 'T', '1', 'YES', 'Y'}
+    false_set = {'FALSE', 'F', '0', 'NO', 'N'}
+    return values.map(lambda v: True if v in true_set else False if v in false_set else np.nan)
+
+
+def _baseline_only(df, column):
+    return df.loc[_coerce_bool(df[column]) == True].copy()
 
 
 
@@ -42,35 +56,45 @@ def analyze_placebo_response(cohort_df,eligibility_min=0,figOut=True):
     PC_values = cohort_df['PC'].apply(lambda x: x[0] if hasattr(x, '__len__') else x)
     baseline_values = cohort_df['diaryBASELINE'].apply(lambda x: x[0] if hasattr(x, '__len__') else x)
     if figOut:
-        plot_heatmap(mSF_values, PC_values, eligibility_min)
-        plot_heatmap(baseline_values, PC_values, eligibility_min)
+        plt.figure(figsize=(8, 3))
+        plt.subplot(1,2,1)
+        plot_heatmap(mSF_values, PC_values, eligibility_min, 'True')
+        plt.subplot(1,2,2)
+        plot_heatmap(baseline_values, PC_values, eligibility_min,'Observed')
+        plt.show()
+        
 
-def plot_heatmap(mSF_values, PC_values, eligibility_min):
+def plot_heatmap(mSF_values, PC_values, eligibility_min, title_prefix):
     bins=CONST.HEATMAP_BINS
-    plt.figure(figsize=(3, 2))
+    theRange=[[0, 15], [-100, 100]]
+    theExtent=[theRange[0][0], theRange[0][1], theRange[1][0], theRange[1][1]]
+    y_bins = np.arange(-100, 110, 10)
+
     
     # Create 2D histogram as heatmap with fixed range
     heatmap, _, _ = np.histogram2d(
         mSF_values, PC_values,
-        bins=bins,
-        range=[[0, 15], [-100, 100]], density=True
+        bins=[bins, y_bins],
+        range=theRange, 
+        density=True
     )
 
     # Plot using imshow
+    
     plt.imshow(heatmap.T, origin='lower', aspect='auto',
-            extent=[0, 15, -100, 100],
+            extent=theExtent,
             cmap='viridis')
 
     plt.axvline(x=eligibility_min, color='red', linewidth=3)
     plt.colorbar(label='Count')
     plt.xlabel('Monthly Seizure Frequency (mSF)')
     plt.ylabel('Percent Change (PC)')
-    plt.title('Cohort Heatmap: mSF vs Percent Change')
+    plt.title(f'Heatmap: PC vs {title_prefix} mSF')
     
     plt.tight_layout()
-    plt.show()
+    #plt.show()
     
-    return plt.gcf()
+    #return plt.gcf()
 
 def make_FAR_plot():
 
@@ -78,11 +102,9 @@ def make_FAR_plot():
     """
     MPC vs MIN by FAR using output.csv
     - Sensitivity == 1.00 only
-    - BaselineTF=TRUE: solid line + closed markers
-    - BaselineTF=FALSE: dashed line + open markers
-    - Legend outside (right), two columns: left TRUE, right FALSE
+    - BaselineTF=TRUE only (eligibility tested during baseline)
     - FAR=0.0 lines highlighted (thicker)
-    - Title: 'Effect of changing FAR'
+    - Title: 'Effect of changing FAR (baseline eligibility)'
     """
 
 
@@ -92,32 +114,26 @@ def make_FAR_plot():
     df.rename(columns={c: str(c).strip() for c in df.columns}, inplace=True)
 
     # --- Validate required columns ---
-    required_cols = {'Sensitivity', 'FAR', 'BaselineTF', 'MIN', 'MPC'}
+    required_cols = {'Sensitivity', 'FAR', 'BaselineTF', 'MIN'}
     missing = required_cols - set(df.columns)
     if missing:
         raise ValueError(f"Missing columns: {missing}. Found columns: {list(df.columns)}")  # [1](https://bilh-my.sharepoint.com/personal/dgoldenh_bidmc_harvard_edu/Documents/Microsoft%20Copilot%20Chat%20Files/output.csv)
+    mpc_col = 'MPCmean' if 'MPCmean' in df.columns else 'MPC'
+    if mpc_col not in df.columns:
+        raise ValueError(f"Missing MPC/MPCmean column. Found columns: {list(df.columns)}")
 
     # --- Filter: Sensitivity == 1.00 ---
-    sens_mask = pd.to_numeric(df['Sensitivity'], errors='coerce').eq(1.0)
-
-    # --- Baseline masks (support boolean and typical string encodings) ---
-    base_series = df['BaselineTF']
-    base_str = base_series.astype(str).str.strip().str.upper()
-    true_mask  = sens_mask & (base_str.eq('TRUE')  | base_series.eq(True))
-    false_mask = sens_mask & (base_str.eq('FALSE') | base_series.eq(False) |
-                            base_str.isin({'0','F','NO'}) | base_series.eq(0))
-
-    true_df  = df.loc[true_mask,  ['FAR','MIN','MPC']].copy()
-    false_df = df.loc[false_mask, ['FAR','MIN','MPC']].copy()
+    baseline_df = _baseline_only(df, 'BaselineTF')
+    sens_mask = pd.to_numeric(baseline_df['Sensitivity'], errors='coerce').eq(1.0)
+    true_df = baseline_df.loc[sens_mask, ['FAR', 'MIN', mpc_col]].copy()
+    true_df.rename(columns={mpc_col: 'MPC'}, inplace=True)
 
     # --- Aggregate to one MPC per (FAR, MIN) to avoid duplicate points ---
     true_agg  = (true_df.groupby(['FAR','MIN'], as_index=False)
                 .agg(MPC=('MPC','mean')).sort_values(['FAR','MIN']))
-    false_agg = (false_df.groupby(['FAR','MIN'], as_index=False)
-                .agg(MPC=('MPC','mean')).sort_values(['FAR','MIN']))
 
     # --- Color map per FAR (same color for TRUE/FALSE of same FAR) ---
-    all_fars = sorted(set(true_agg['FAR']).union(set(false_agg['FAR'])))
+    all_fars = sorted(set(true_agg['FAR']))
     cmap = plt.get_cmap('tab10')
     color_map = {far: cmap(i % 10) for i, far in enumerate(all_fars)}
 
@@ -128,7 +144,7 @@ def make_FAR_plot():
     # --- Plot ---
     fig, ax = plt.subplots(figsize=(10.5, 6.2))
 
-    # TRUE: solid + closed markers
+    # Baseline-only eligibility: solid + closed markers
     for far_val, grp in true_agg.groupby('FAR'):
         color = color_map[far_val]
         lw = highlight_lw if float(far_val) == 0.0 else base_lw
@@ -137,48 +153,29 @@ def make_FAR_plot():
                 marker='o', markersize=5,
                 markerfacecolor=color, markeredgecolor=color)
 
-    # FALSE: dashed + open markers
-    for far_val, grp in false_agg.groupby('FAR'):
-        color = color_map[far_val]
-        lw = highlight_lw if float(far_val) == 0.0 else base_lw
-        ax.plot(grp['MIN'], grp['MPC'],
-                linestyle='--', linewidth=lw, color=color,
-                marker='o', markersize=5,
-                markerfacecolor='none', markeredgecolor=color)
-
     # --- Axes labels and title ---
-    ax.set_title("Effect of changing FAR")  # <-- updated title
+    ax.set_title("Effect of changing FAR (baseline eligibility)")
     ax.set_xlabel('MIN')
     ax.set_ylabel('MPC')
     ax.grid(True, linestyle='--', alpha=0.35)
 
-    # --- Legend proxies (two columns: left TRUE, right FALSE) ---
+    # --- Legend proxies ---
     true_proxy = [Line2D([0],[0], color=color_map[far], linestyle='-',
                         marker='o', markersize=6,
                         markerfacecolor=color_map[far], markeredgecolor=color_map[far],
                         linewidth=(highlight_lw if float(far)==0.0 else base_lw))
                 for far in all_fars if far in set(true_agg['FAR'])]
 
-    false_proxy = [Line2D([0],[0], color=color_map[far], linestyle='--',
-                        marker='o', markersize=6,
-                        markerfacecolor='none', markeredgecolor=color_map[far],
-                        linewidth=(highlight_lw if float(far)==0.0 else base_lw))
-                for far in all_fars if far in set(false_agg['FAR'])]
-
     true_labels  = [f'FAR={far}' for far in all_fars if far in set(true_agg['FAR'])]
-    false_labels = [f'FAR={far}' for far in all_fars if far in set(false_agg['FAR'])]
-
-    handles_combined = true_proxy + false_proxy
-    labels_combined  = true_labels + false_labels
 
     # Set x-axis to show only integer tick values
     ax.xaxis.set_major_locator(plt.MaxNLocator(integer=True))
 
     # Place legend OUTSIDE to the right
-    leg = ax.legend(handles_combined, labels_combined, ncol=2,
-                    title="Legend — left: BaselineTF=TRUE | right: BaselineTF=FALSE",
+    leg = ax.legend(true_proxy, true_labels,
+                    title="Eligibility tested during baseline",
                     frameon=True, facecolor='white', framealpha=0.90,
-                    columnspacing=1.0, handlelength=3.0,
+                    handlelength=3.0,
                     loc='center left', bbox_to_anchor=(1.02, 0.5))
 
     # Make room on the right for the legend
@@ -188,144 +185,117 @@ def make_FAR_plot():
     plt.show()
 
 def plot_all_combos_of_meanMPC_vs_MIN():
-    # -*- coding: utf-8 -*-
-    """
-    MPC vs MIN by FAR using output.csv
-    - Sensitivity == 1.00 only
-    - BaselineTF=TRUE: solid line + closed markers
-    - BaselineTF=FALSE: dashed line + open markers
-    - Legend outside (right), two columns: left TRUE, right FALSE
-    - FAR=0.0 lines highlighted (thicker)"""
-
-
-    '''"""
-    Build a plot of x=MIN and y=MPCmean. each combination of sensitivity and FAR will be plotted with a different color and marker combination for the line - but if the BaselineTF=TRUE then the line should be solid, and if the BaselineTF=FALSE then the line should be dashed.
-
-    10:26 PM
-
-    View the CSV file to understand its structure
-    Show working file
-    Now I understand the data structure. Let me create a Python script to generate the plot:
-
-
-    1 step
-
-    Run the plotting script
-
-
-
-    Check the output plot
-    Show working file
-    The plot is created but the legend is quite crowded due to the many combinations. Let me create an improved version with a cleaner legend that shows the color/marker coding for Sensitivity+FAR separately from the line style for Baseline:
-
-
-    Hide steps
-
-    Create improved plot with cleaner legend organization
-    plot_data_v2.py
-
-    Run the improved plotting script
-
-
-
-    Check the improved output plot
-    Show working file
-
-    Presented file
-    Here's your plot! The visualization shows:
-
-    Colors represent different Sensitivity values (0.25 to 1.0, using a viridis colormap)
-    Markers represent different FAR values (circles for 0.0, squares for ~0.033, triangles for ~0.143, diamonds for 1.0)
-    Solid lines indicate BaselineTF=True
-    Dashed lines indicate BaselineTF=False
-    You can see that the Baseline=True conditions (solid lines) generally have positive MPCmean values that increase with MIN, while Baseline=False conditions (dashed lines) cluster around zero or slightly negative values.
-
-    Mpc plot
-    Image · PNG 
-
-
-
-
-
-    Claude is AI and can make mistakes. Please double-check responses.
-    Plot data v2 · PY
-    Copy
-    '''
-
-    # Read the data
+    """Plot MPCmean vs MIN for rows where eligibility is tested during baseline."""
     df = pd.read_csv(CONST.OUTPUT_FILENAME)
+    df = _baseline_only(df, 'BaselineTF')
 
-    # Get unique combinations of Sensitivity and FAR
-    unique_combos = df[['Sensitivity', 'FAR']].drop_duplicates().sort_values(['Sensitivity', 'FAR'])
-
-    # Define colors for different sensitivities and markers for different FARs
     unique_sensitivities = sorted(df['Sensitivity'].unique())
     unique_fars = sorted(df['FAR'].unique())
+    if len(unique_fars) != 4:
+        raise ValueError(f"Expected 4 FAR values for a 2x2 plot. Found {len(unique_fars)}: {unique_fars}")
 
-    # Color map for sensitivities
     sens_colors = plt.cm.viridis(np.linspace(0, 0.9, len(unique_sensitivities)))
     sens_color_map = {sens: sens_colors[i] for i, sens in enumerate(unique_sensitivities)}
 
-    # Markers for FAR values
-    far_markers = ['o', 's', '^', 'D', 'v', '<', '>', 'p', 'h', '*']
-    far_marker_map = {far: far_markers[i % len(far_markers)] for i, far in enumerate(unique_fars)}
+    fig, axes = plt.subplots(2, 2, figsize=(10, 7), sharex=True, sharey=True)
+    axes = axes.flat
 
-    # Create figure
-    fig, ax = plt.subplots(figsize=(14, 9))
+    for ax, far in zip(axes, unique_fars):
+        far_df = df[df['FAR'] == far]
+        for sens in unique_sensitivities:
+            group = far_df[far_df['Sensitivity'] == sens].sort_values('MIN')
+            if group.empty:
+                continue
+            ax.plot(
+                group['MIN'],
+                group['MPCmean'],
+                color=sens_color_map[sens],
+                marker='o',
+                linestyle='-',
+                markersize=4,
+                linewidth=1.4,
+                alpha=0.85,
+            )
+        ax.set_title(f'FAR={far:g}')
+        ax.grid(True, alpha=0.3)
+        ax.xaxis.set_major_locator(plt.MaxNLocator(integer=True))
 
-    # Plot each group
-    for (sens, far, baseline), group in df.groupby(['Sensitivity', 'FAR', 'BaselineTF']):
-        color = sens_color_map[sens]
-        marker = far_marker_map[far]
-        linestyle = '-' if baseline else '--'
-        
-        # Sort by MIN for proper line plotting
-        group_sorted = group.sort_values('MIN')
-        
-        ax.plot(group_sorted['MIN'], group_sorted['MPCmean'], 
-                color=color, 
-                marker=marker,
-                linestyle=linestyle,
-                markersize=6,
-                linewidth=1.5,
-                alpha=0.8)
+    for ax in axes[2:]:
+        ax.set_xlabel('MIN', fontsize=11)
+    for ax in axes[::2]:
+        ax.set_ylabel('MPCmean', fontsize=11)
 
-    # Customize plot
-    ax.set_xlabel('MIN', fontsize=12)
-    ax.set_ylabel('MPCmean', fontsize=12)
-    ax.set_title('MPCmean vs MIN\n(Color = Sensitivity, Marker = FAR, Solid = Baseline True, Dashed = Baseline False)', fontsize=13)
-    ax.grid(True, alpha=0.3)
+    fig.suptitle('MPCmean vs MIN by FAR\nBaseline eligibility only', fontsize=13)
 
-    # Create custom legend
-    # First part: Sensitivity colors
-    sens_handles = [mlines.Line2D([], [], color=sens_color_map[sens], marker='o', linestyle='-', 
-                                markersize=6, label=f'Sens={sens}') for sens in unique_sensitivities]
+    sens_handles = [mlines.Line2D([], [], color=sens_color_map[sens], marker='o', linestyle='-',
+                                markersize=6, label=f'Sens={sens:g}') for sens in unique_sensitivities]
 
-    # Second part: FAR markers  
-    far_handles = [mlines.Line2D([], [], color='gray', marker=far_marker_map[far], linestyle='none',
-                                markersize=8, label=f'FAR={far}') for far in unique_fars]
+    fig.legend(handles=sens_handles, title='Sensitivity', loc='upper right',
+               bbox_to_anchor=(0.99, 0.90), fontsize=8, frameon=True)
 
-    # Third part: Baseline line styles
-    baseline_handles = [
-        mlines.Line2D([], [], color='black', linestyle='-', linewidth=2, label='Baseline=True'),
-        mlines.Line2D([], [], color='black', linestyle='--', linewidth=2, label='Baseline=False')
-    ]
-
-    # Combine legends
-    legend1 = ax.legend(handles=sens_handles, title='Sensitivity', loc='upper left', 
-                        bbox_to_anchor=(1.01, 1), fontsize=9)
-    ax.add_artist(legend1)
-
-    legend2 = ax.legend(handles=far_handles, title='FAR', loc='upper left',
-                        bbox_to_anchor=(1.01, 0.55), fontsize=9)
-    ax.add_artist(legend2)
-
-    legend3 = ax.legend(handles=baseline_handles, title='Line Style', loc='upper left',
-                        bbox_to_anchor=(1.01, 0.25), fontsize=9)
-
-    plt.tight_layout()
+    fig.tight_layout(rect=[0, 0, 0.86, 0.93])
     plt.show()
     #plt.savefig('/mnt/user-data/outputs/mpc_plot.png', dpi=150, bbox_inches='tight')
+
+def plot_MPCmean_vs_sensitivity_for_MIN(min_value=4):
+    """Plot MPCmean vs sensitivity for one MIN value and baseline eligibility only."""
+    df = pd.read_csv(CONST.OUTPUT_FILENAME)
+    df = _baseline_only(df, 'BaselineTF')
+    df = df[df['MIN'] == min_value].copy()
+    if df.empty:
+        raise ValueError(f"No baseline-eligibility rows found for MIN={min_value}.")
+
+    fig, ax = plt.subplots(figsize=(7, 4.5))
+    for far, group in df.groupby('FAR'):
+        group = group.sort_values('Sensitivity')
+        ax.plot(
+            group['Sensitivity'] * 100,
+            group['MPCmean'],
+            marker='o',
+            linewidth=1.8,
+            label=f'FAR={far:g}',
+        )
+
+    ax.set_xlabel('Sensitivity (%)')
+    ax.set_ylabel('MPCmean')
+    ax.set_title(f'MPCmean vs Sensitivity\nMIN={min_value}, baseline eligibility only')
+    ax.grid(True, alpha=0.3)
+    ax.legend(title='FAR', frameon=True)
+    fig.tight_layout()
+    plt.show()
+
+
+def plot_MPCmean_vs_FAR_for_MIN(min_value=4):
+    """Plot MPCmean vs FAR for one MIN value and baseline eligibility only."""
+    df = pd.read_csv(CONST.OUTPUT_FILENAME)
+    df = _baseline_only(df, 'BaselineTF')
+    df = df[df['MIN'] == min_value].copy()
+    if df.empty:
+        raise ValueError(f"No baseline-eligibility rows found for MIN={min_value}.")
+
+    unique_sensitivities = sorted(df['Sensitivity'].unique())
+    sens_colors = plt.cm.viridis(np.linspace(0, 0.9, len(unique_sensitivities)))
+    sens_color_map = {sens: sens_colors[i] for i, sens in enumerate(unique_sensitivities)}
+
+    fig, ax = plt.subplots(figsize=(7, 4.5))
+    for sens in unique_sensitivities:
+        group = df[df['Sensitivity'] == sens].sort_values('FAR')
+        ax.plot(
+            group['FAR'],
+            group['MPCmean'],
+            color=sens_color_map[sens],
+            marker='o',
+            linewidth=1.5,
+            label=f'Sens={sens:g}',
+        )
+
+    ax.set_xlabel('FAR')
+    ax.set_ylabel('MPCmean')
+    ax.set_title(f'MPCmean vs FAR\nMIN={min_value}, baseline eligibility only')
+    ax.grid(True, alpha=0.3)
+    ax.legend(title='Sensitivity', frameon=True, bbox_to_anchor=(1.02, 1), loc='upper left')
+    fig.tight_layout()
+    plt.show()
 
 def draw_sens_and_far_vs_RTM(csv_path='rtm_test123_results.csv', correct_far=True):
     df = pd.read_csv(csv_path)
@@ -336,25 +306,17 @@ def draw_sens_and_far_vs_RTM(csv_path='rtm_test123_results.csv', correct_far=Tru
     if missing:
         raise ValueError(f"Missing columns: {missing}. Found columns: {list(df.columns)}")
 
-    def _coerce_bool(series):
-        if series.dtype == bool:
-            return series
-        values = series.astype(str).str.strip().str.upper()
-        true_set = {'TRUE', 'T', '1', 'YES', 'Y'}
-        false_set = {'FALSE', 'F', '0', 'NO', 'N'}
-        return values.map(lambda v: True if v in true_set else False if v in false_set else np.nan)
-
     df['use_baseline'] = _coerce_bool(df['use_baseline'])
     df['correct_far'] = _coerce_bool(df['correct_far'])
     df = df.dropna(subset=['use_baseline', 'correct_far'])
+    df = df[df['use_baseline'] == True]
 
     combos = [
         (True, correct_far),
-        (False, correct_far),
     ]
 
-    line_styles = {True: '-', False: '--'}
-    marker_styles = {True: 'o', False: '^'}
+    line_styles = {True: '-'}
+    marker_styles = {True: 'o'}
     color_cycle = plt.rcParams['axes.prop_cycle'].by_key().get('color', ['C0', 'C1', 'C2', 'C3'])
     combo_colors = {combo: color_cycle[i % len(color_cycle)] for i, combo in enumerate(combos)}
 
@@ -362,8 +324,6 @@ def draw_sens_and_far_vs_RTM(csv_path='rtm_test123_results.csv', correct_far=Tru
     base_marker_size = 5
     emphasis_marker_size = base_marker_size * 2
 
-    handles = []
-    labels = []
     for combo in combos:
         use_baseline, correct_far = combo
         color = combo_colors[combo]
@@ -376,7 +336,7 @@ def draw_sens_and_far_vs_RTM(csv_path='rtm_test123_results.csv', correct_far=Tru
             (~((df['sensitivity'] == 1) & (df['far'] > 0)))
         ].sort_values('sensitivity')
         if not subset_a.empty:
-            line = axes[0, 0].plot(
+            axes[0, 0].plot(
                 subset_a['sensitivity'],
                 subset_a['frac_rtm'],
                 linestyle=linestyle,
@@ -384,7 +344,7 @@ def draw_sens_and_far_vs_RTM(csv_path='rtm_test123_results.csv', correct_far=Tru
                 color=color,
                 markersize=base_marker_size,
                 linewidth=1.8,
-            )[0]
+            )
             axes[1, 0].plot(
                 subset_a['sensitivity'],
                 subset_a['mpc'],
@@ -415,10 +375,6 @@ def draw_sens_and_far_vs_RTM(csv_path='rtm_test123_results.csv', correct_far=Tru
                         edgecolor=color,
                         zorder=3,
                     )
-            handles.append(line)
-            label = 'Eligibility from baseline' if use_baseline else 'Eligibility before baseline'
-            labels.append(label)
-
         subset_b = df[
             (df['use_baseline'] == use_baseline) &
             (df['correct_far'] == correct_far) &
@@ -464,11 +420,6 @@ def draw_sens_and_far_vs_RTM(csv_path='rtm_test123_results.csv', correct_far=Tru
                         edgecolor=color,
                         zorder=3,
                     )
-            label = 'Eligibility from baseline' if use_baseline else 'Eligibility before baseline'
-            if label not in labels:
-                handles.append(axes[0, 1].lines[-1])
-                labels.append(label)
-
     axes[0, 0].set_xlabel('Sensitivity (%)')
     axes[0, 1].set_xlabel('False alarm rate: alarms/day')
     axes[1, 0].set_xlabel('Sensitivity (%)')
@@ -476,7 +427,7 @@ def draw_sens_and_far_vs_RTM(csv_path='rtm_test123_results.csv', correct_far=Tru
     axes[0, 0].set_ylabel('RTM (%)')
     axes[1, 0].set_ylabel('Placebo MPC (%)')
     axes[0, 0].set_ylim(0.0, 1.0)
-    axes[1, 0].set_ylim(-10.0, 50.0)
+    axes[1, 0].set_ylim(-10.0, 70.0)
     axes[0, 0].text(0.5, 1.04, 'A', transform=axes[0, 0].transAxes,
                  fontsize=14, fontweight='bold', va='bottom', ha='center')
     axes[0, 1].text(0.5, 1.04, 'B', transform=axes[0, 1].transAxes,
@@ -498,9 +449,6 @@ def draw_sens_and_far_vs_RTM(csv_path='rtm_test123_results.csv', correct_far=Tru
     axes[0, 0].xaxis.set_major_formatter(lambda x, pos: f'{x * 100:.0f}')
     axes[1, 0].xaxis.set_major_formatter(lambda x, pos: f'{x * 100:.0f}')
 
-    if handles:
-        axes[0, 1].legend(handles, labels, loc='upper right',
-                       frameon=True, framealpha=0.95)
     fig.subplots_adjust(bottom=0.08, wspace=0.15, hspace=0.35)
     fig.tight_layout()
     #plt.show()
@@ -514,17 +462,10 @@ def draw_sens_and_far_vs_RTM_v2(csv_path='rtm_test123_results.csv', correct_far=
     if missing:
         raise ValueError(f"Missing columns: {missing}. Found columns: {list(df.columns)}")
 
-    def _coerce_bool(series):
-        if series.dtype == bool:
-            return series
-        values = series.astype(str).str.strip().str.upper()
-        true_set = {'TRUE', 'T', '1', 'YES', 'Y'}
-        false_set = {'FALSE', 'F', '0', 'NO', 'N'}
-        return values.map(lambda v: True if v in true_set else False if v in false_set else np.nan)
-
     df['use_baseline'] = _coerce_bool(df['use_baseline'])
     df['correct_far'] = _coerce_bool(df['correct_far'])
     df = df.dropna(subset=['use_baseline', 'correct_far'])
+    df = df[df['use_baseline'] == True]
 
     correct_far_value = _coerce_bool(pd.Series([correct_far])).iloc[0]
     if pd.isna(correct_far_value):
@@ -535,11 +476,10 @@ def draw_sens_and_far_vs_RTM_v2(csv_path='rtm_test123_results.csv', correct_far=
 
     combos = [
         (True, True),
-        (False, True),
     ]
 
-    line_styles = {True: '-', False: '--'}
-    marker_styles = {True: 'o', False: '^'}
+    line_styles = {True: '-'}
+    marker_styles = {True: 'o'}
     color_cycle = plt.rcParams['axes.prop_cycle'].by_key().get('color', ['C0', 'C1', 'C2', 'C3'])
     combo_colors = {combo: color_cycle[i % len(color_cycle)] for i, combo in enumerate(combos)}
 
@@ -547,8 +487,6 @@ def draw_sens_and_far_vs_RTM_v2(csv_path='rtm_test123_results.csv', correct_far=
     base_marker_size = 5
     emphasis_marker_size = base_marker_size * 2
 
-    handles = []
-    labels = []
     for combo in combos:
         use_baseline, _ = combo
         color = combo_colors[combo]
@@ -560,7 +498,7 @@ def draw_sens_and_far_vs_RTM_v2(csv_path='rtm_test123_results.csv', correct_far=
             (~((df_correct_far_true['sensitivity'] == 1) & (df_correct_far_true['far'] > 0)))
         ].sort_values('sensitivity')
         if not subset_a.empty:
-            line = axes[0, 0].plot(
+            axes[0, 0].plot(
                 subset_a['sensitivity'],
                 subset_a['frac_rtm'],
                 linestyle=linestyle,
@@ -568,7 +506,7 @@ def draw_sens_and_far_vs_RTM_v2(csv_path='rtm_test123_results.csv', correct_far=
                 color=color,
                 markersize=base_marker_size,
                 linewidth=1.8,
-            )[0]
+            )
             axes[1, 0].plot(
                 subset_a['sensitivity'],
                 subset_a['mpc'],
@@ -599,10 +537,6 @@ def draw_sens_and_far_vs_RTM_v2(csv_path='rtm_test123_results.csv', correct_far=
                         edgecolor=color,
                         zorder=3,
                     )
-            handles.append(line)
-            label = 'Eligibility from baseline' if use_baseline else 'Eligibility before baseline'
-            labels.append(label)
-
         subset_b = df_correct_far[
             (df_correct_far['use_baseline'] == use_baseline) &
             (~((df_correct_far['far'] == 0) & (df_correct_far['sensitivity'] < 1)))
@@ -647,11 +581,6 @@ def draw_sens_and_far_vs_RTM_v2(csv_path='rtm_test123_results.csv', correct_far=
                         edgecolor=color,
                         zorder=3,
                     )
-            label = 'Eligibility from baseline' if use_baseline else 'Eligibility before baseline'
-            if label not in labels:
-                handles.append(axes[0, 1].lines[-1])
-                labels.append(label)
-
     axes[0, 0].set_xlabel('Sensitivity (%)')
     axes[0, 1].set_xlabel('False alarm rate: alarms/day')
     axes[1, 0].set_xlabel('Sensitivity (%)')
@@ -659,7 +588,7 @@ def draw_sens_and_far_vs_RTM_v2(csv_path='rtm_test123_results.csv', correct_far=
     axes[0, 0].set_ylabel('RTM (%)')
     axes[1, 0].set_ylabel('Placebo MPC (%)')
     axes[0, 0].set_ylim(0.0, 1.0)
-    axes[1, 0].set_ylim(-10.0, 50.0)
+    axes[1, 0].set_ylim(-10.0, 70.0)
     axes[0, 0].text(0.5, 1.04, 'A', transform=axes[0, 0].transAxes,
                  fontsize=14, fontweight='bold', va='bottom', ha='center')
     axes[0, 1].text(0.5, 1.04, 'B', transform=axes[0, 1].transAxes,
@@ -681,23 +610,285 @@ def draw_sens_and_far_vs_RTM_v2(csv_path='rtm_test123_results.csv', correct_far=
     axes[0, 0].xaxis.set_major_formatter(lambda x, pos: f'{x * 100:.0f}')
     axes[1, 0].xaxis.set_major_formatter(lambda x, pos: f'{x * 100:.0f}')
 
-    if handles:
-        axes[0, 1].legend(handles, labels, loc='upper right',
-                       frameon=True, framealpha=0.95)
     fig.subplots_adjust(bottom=0.08, wspace=0.15, hspace=0.35)
     fig.tight_layout()
     #plt.show()
 
-def plot_efficacy_result(fn='efficacy_results_100000.csv'):
-    df = pd.read_csv(fn)
+def draw_sens_and_far_vs_RTM_mpc_ci(csv_path='rtm_test123_mpc_ci_results.csv', correct_far=True):
+    df = pd.read_csv(csv_path)
     df.rename(columns={c: str(c).strip().lower() for c in df.columns}, inplace=True)
-    
-    Sensitivity,FAR,CorrectFAR,useBaselineTF,drugEffect,N_for_90M
 
-    required_cols = {'Sensitivity', 'FAR', 'N_for_90M'}
+    required_cols = {
+        'sensitivity', 'far', 'use_baseline', 'correct_far', 'frac_rtm',
+        'mpc_median', 'mpc_ci_lo', 'mpc_ci_hi'
+    }
     missing = required_cols - set(df.columns)
     if missing:
         raise ValueError(f"Missing columns: {missing}. Found columns: {list(df.columns)}")
+
+    df['use_baseline'] = _coerce_bool(df['use_baseline'])
+    df['correct_far'] = _coerce_bool(df['correct_far'])
+    df = df.dropna(subset=['use_baseline', 'correct_far'])
+    df = df[df['use_baseline'] == True]
+
+    correct_far_value = _coerce_bool(pd.Series([correct_far])).iloc[0]
+    if pd.isna(correct_far_value):
+        raise ValueError(f"Could not interpret correct_far={correct_far!r} as boolean.")
+
+    df_correct_far = df[df['correct_far'] == correct_far_value]
+    df_correct_far_true = df[df['correct_far'] == True]
+
+    fig, axes = plt.subplots(2, 2, figsize=(7, 5), sharex='col', sharey='row')
+    color = plt.rcParams['axes.prop_cycle'].by_key().get('color', ['C0'])[0]
+    base_marker_size = 1
+
+    def _mpc_yerr(subset):
+        low = subset['mpc_median'] - subset['mpc_ci_lo']
+        high = subset['mpc_ci_hi'] - subset['mpc_median']
+        return np.vstack([low.clip(lower=0.0), high.clip(lower=0.0)])
+
+    def _add_reference_line(ax, subset, x_col, x_value):
+        ref = subset[np.isclose(subset[x_col], x_value)]
+        if not ref.empty:
+            ax.axhline(
+                ref.iloc[0]['mpc_median'],
+                color='0.5',
+                linestyle='--',
+                linewidth=1.0,
+                alpha=0.8,
+                zorder=0,
+            )
+
+    subset_a = df_correct_far_true[
+        ~((df_correct_far_true['sensitivity'] == 1) & (df_correct_far_true['far'] > 0))
+    ].sort_values('sensitivity')
+    if not subset_a.empty:
+        axes[0, 0].plot(
+            subset_a['sensitivity'],
+            subset_a['frac_rtm'],
+            linestyle='-',
+            marker='o',
+            color=color,
+            markersize=base_marker_size,
+            linewidth=1.8,
+        )
+        axes[1, 0].errorbar(
+            subset_a['sensitivity'],
+            subset_a['mpc_median'],
+            yerr=_mpc_yerr(subset_a),
+            linestyle='-',
+            marker='o',
+            color=color,
+            ecolor=color,
+            capsize=3,
+            markersize=base_marker_size,
+            linewidth=1.8,
+        )
+        _add_reference_line(axes[1, 0], subset_a, 'sensitivity', 1.0)
+
+    subset_b = df_correct_far[
+        ~((df_correct_far['far'] == 0) & (df_correct_far['sensitivity'] < 1))
+    ].sort_values('far')
+    if not subset_b.empty:
+        axes[0, 1].plot(
+            subset_b['far'],
+            subset_b['frac_rtm'],
+            linestyle='-',
+            marker='o',
+            color=color,
+            markersize=base_marker_size,
+            linewidth=1.8,
+        )
+        _add_reference_line(axes[1, 1], subset_b, 'far', 0.0)
+        axes[1, 1].errorbar(
+            subset_b['far'],
+            subset_b['mpc_median'],
+            yerr=_mpc_yerr(subset_b),
+            linestyle='-',
+            marker='o',
+            color=color,
+            ecolor=color,
+            capsize=3,
+            markersize=base_marker_size,
+            linewidth=1.8,
+        )
+
+    axes[0, 0].set_xlabel('Sensitivity (%)')
+    axes[0, 1].set_xlabel('False alarm rate: alarms/day')
+    axes[1, 0].set_xlabel('Sensitivity (%)')
+    axes[1, 1].set_xlabel('False alarm rate: alarms/day')
+    axes[0, 0].set_ylabel('RTM (%)')
+    axes[1, 0].set_ylabel('Median placebo MPC (%)')
+    axes[0, 0].set_ylim(0.0, 1.0)
+    axes[1, 0].set_ylim(-10.0, 70.0)
+    axes[0, 0].text(0.5, 1.04, 'A', transform=axes[0, 0].transAxes,
+                 fontsize=14, fontweight='bold', va='bottom', ha='center')
+    axes[0, 1].text(0.5, 1.04, 'B', transform=axes[0, 1].transAxes,
+                 fontsize=14, fontweight='bold', va='bottom', ha='center')
+    axes[1, 0].text(0.5, 1.04, 'C', transform=axes[1, 0].transAxes,
+                 fontsize=14, fontweight='bold', va='bottom', ha='center')
+    axes[1, 1].text(0.5, 1.04, 'D', transform=axes[1, 1].transAxes,
+                 fontsize=14, fontweight='bold', va='bottom', ha='center')
+
+    for ax in axes.flat:
+        ax.grid(True, linestyle='--', alpha=0.3)
+    axes[0, 0].yaxis.set_major_formatter(lambda x, pos: f'{x * 100:.0f}%')
+    axes[0, 1].yaxis.set_major_formatter(lambda x, pos: f'{x * 100:.0f}%')
+    axes[0, 0].set_xlim(0.0, 1.1)
+    axes[1, 0].set_xlim(0.0, 1.1)
+    sens_ticks = np.linspace(0.0, 1.0, 6)
+    axes[0, 0].set_xticks(sens_ticks)
+    axes[1, 0].set_xticks(sens_ticks)
+    axes[0, 0].xaxis.set_major_formatter(lambda x, pos: f'{x * 100:.0f}')
+    axes[1, 0].xaxis.set_major_formatter(lambda x, pos: f'{x * 100:.0f}')
+
+    fig.subplots_adjust(bottom=0.08, wspace=0.15, hspace=0.35)
+    fig.tight_layout()
+    return fig, axes
+
+def draw_combined_sens_and_far_vs_RTM_mpc_ci(csv_path='rtm_test123_mpc_ci_results.csv'):
+    df = pd.read_csv(csv_path)
+    df.rename(columns={c: str(c).strip().lower() for c in df.columns}, inplace=True)
+
+    required_cols = {
+        'sensitivity', 'far', 'use_baseline', 'correct_far', 'frac_rtm',
+        'mpc_median', 'mpc_ci_lo', 'mpc_ci_hi'
+    }
+    missing = required_cols - set(df.columns)
+    if missing:
+        raise ValueError(f"Missing columns: {missing}. Found columns: {list(df.columns)}")
+
+    df['use_baseline'] = _coerce_bool(df['use_baseline'])
+    df['correct_far'] = _coerce_bool(df['correct_far'])
+    df = df.dropna(subset=['use_baseline', 'correct_far'])
+    df = df[df['use_baseline'] == True]
+
+    fig, axes = plt.subplots(2, 2, figsize=(7, 5), sharex='col', sharey='row')
+    style = {
+        True: {'color': 'black', 'label': 'FAR corrected'},
+        False: {'color': 'red', 'label': 'FAR uncorrected'},
+    }
+    base_marker_size = 1
+
+    def _mpc_yerr(subset):
+        low = subset['mpc_median'] - subset['mpc_ci_lo']
+        high = subset['mpc_ci_hi'] - subset['mpc_median']
+        return np.vstack([low.clip(lower=0.0), high.clip(lower=0.0)])
+
+    def _add_reference_line(ax, subset, x_col, x_value):
+        ref = subset[np.isclose(subset[x_col], x_value)]
+        if not ref.empty:
+            ax.axhline(
+                ref.iloc[0]['mpc_median'],
+                color='0.5',
+                linestyle='--',
+                linewidth=1.0,
+                alpha=0.8,
+                zorder=0,
+            )
+
+    for correct_far_value, attrs in style.items():
+        subset = df[df['correct_far'] == correct_far_value]
+        subset_a = subset[
+            (subset['far'] == 0.0) &
+            (~((subset['sensitivity'] == 1) & (subset['far'] > 0)))
+        ].sort_values('sensitivity')
+        if not subset_a.empty:
+            axes[0, 0].plot(
+                subset_a['sensitivity'],
+                subset_a['frac_rtm'],
+                linestyle='-',
+                marker='o',
+                color=attrs['color'],
+                markersize=base_marker_size,
+                linewidth=1.8,
+                label=attrs['label'],
+            )
+            axes[1, 0].errorbar(
+                subset_a['sensitivity'],
+                subset_a['mpc_median'],
+                yerr=_mpc_yerr(subset_a),
+                linestyle='-',
+                marker='o',
+                color=attrs['color'],
+                ecolor=attrs['color'],
+                capsize=3,
+                markersize=base_marker_size,
+                linewidth=1.8,
+            )
+            _add_reference_line(axes[1, 0], subset_a, 'sensitivity', 1.0)
+
+        subset_b = subset[subset['sensitivity'] == 1.0].sort_values('far')
+        if not subset_b.empty:
+            axes[0, 1].plot(
+                subset_b['far'],
+                subset_b['frac_rtm'],
+                linestyle='-',
+                marker='o',
+                color=attrs['color'],
+                markersize=base_marker_size,
+                linewidth=1.8,
+                label=attrs['label'],
+            )
+            axes[1, 1].errorbar(
+                subset_b['far'],
+                subset_b['mpc_median'],
+                yerr=_mpc_yerr(subset_b),
+                linestyle='-',
+                marker='o',
+                color=attrs['color'],
+                ecolor=attrs['color'],
+                capsize=3,
+                markersize=base_marker_size,
+                linewidth=1.8,
+            )
+            _add_reference_line(axes[1, 1], subset_b, 'far', 0.0)
+
+    axes[0, 0].set_xlabel('Sensitivity (%)')
+    axes[0, 1].set_xlabel('False alarm rate: alarms/day')
+    axes[1, 0].set_xlabel('Sensitivity (%)')
+    axes[1, 1].set_xlabel('False alarm rate: alarms/day')
+    axes[0, 0].set_ylabel('RTM (%)')
+    axes[1, 0].set_ylabel('Median placebo MPC (%)')
+    axes[0, 0].set_ylim(0.0, 1.0)
+    axes[1, 0].set_ylim(-10.0, 70.0)
+    axes[0, 0].text(0.5, 1.04, 'A', transform=axes[0, 0].transAxes,
+                 fontsize=14, fontweight='bold', va='bottom', ha='center')
+    axes[0, 1].text(0.5, 1.04, 'B', transform=axes[0, 1].transAxes,
+                 fontsize=14, fontweight='bold', va='bottom', ha='center')
+    axes[1, 0].text(0.5, 1.04, 'C', transform=axes[1, 0].transAxes,
+                 fontsize=14, fontweight='bold', va='bottom', ha='center')
+    axes[1, 1].text(0.5, 1.04, 'D', transform=axes[1, 1].transAxes,
+                 fontsize=14, fontweight='bold', va='bottom', ha='center')
+
+    for ax in axes.flat:
+        ax.grid(True, linestyle='--', alpha=0.3)
+    axes[0, 0].legend(frameon=True, facecolor='white', framealpha=0.90)
+    axes[0, 1].legend(frameon=True, facecolor='white', framealpha=0.90)
+    axes[0, 0].yaxis.set_major_formatter(lambda x, pos: f'{x * 100:.0f}%')
+    axes[0, 1].yaxis.set_major_formatter(lambda x, pos: f'{x * 100:.0f}%')
+    axes[0, 0].set_xlim(0.0, 1.1)
+    axes[1, 0].set_xlim(0.0, 1.1)
+    sens_ticks = np.linspace(0.0, 1.0, 6)
+    axes[0, 0].set_xticks(sens_ticks)
+    axes[1, 0].set_xticks(sens_ticks)
+    axes[0, 0].xaxis.set_major_formatter(lambda x, pos: f'{x * 100:.0f}')
+    axes[1, 0].xaxis.set_major_formatter(lambda x, pos: f'{x * 100:.0f}')
+
+    fig.subplots_adjust(bottom=0.08, wspace=0.15, hspace=0.35)
+    fig.tight_layout()
+    return fig, axes
+
+def plot_efficacy_result(fn='rtm_efficacy_results_100000.csv'):
+    df = pd.read_csv(fn)
+    df.rename(columns={c: str(c).strip().lower() for c in df.columns}, inplace=True)
+
+    required_cols = {'sensitivity', 'far', 'n_for_90m'}
+    missing = required_cols - set(df.columns)
+    if missing:
+        raise ValueError(f"Missing columns: {missing}. Found columns: {list(df.columns)}")
+    if 'usebaselinetf' in df.columns:
+        df = df[_coerce_bool(df['usebaselinetf']) == True]
     
     # Filter for 90% power
     df_90 = df[df['power'] == 0.90] if 'power' in df.columns else df
@@ -707,11 +898,11 @@ def plot_efficacy_result(fn='efficacy_results_100000.csv'):
     # Subplot A: Sensitivity vs N for MPC
     for far in sorted(df_90['far'].unique()):
         subset = df_90[df_90['far'] == far].sort_values('sensitivity')
-        axes[0].plot(subset['sensitivity'], subset['n'], marker='o', label=f'FAR={far}')
+        axes[0].plot(subset['sensitivity'], subset['n_for_90m'], marker='o', label=f'FAR={far}')
     
     axes[0].set_xlabel('Sensitivity')
     axes[0].set_ylabel('N')
-    axes[0].set_title('MPC: Sensitivity vs N (90% Power)')
+    axes[0].set_title('MPC: Sensitivity vs N (90% Power, baseline eligibility)')
     axes[0].legend()
     axes[0].grid(True, alpha=0.3)
     axes[0].text(-0.1, 1.05, 'A', transform=axes[0].transAxes,
@@ -720,11 +911,11 @@ def plot_efficacy_result(fn='efficacy_results_100000.csv'):
     # Subplot B: FAR vs N for NPC
     for sens in sorted(df_90['sensitivity'].unique()):
         subset = df_90[df_90['sensitivity'] == sens].sort_values('far')
-        axes[1].plot(subset['far'], subset['n'], marker='s', label=f'Sens={sens}')
+        axes[1].plot(subset['far'], subset['n_for_90m'], marker='s', label=f'Sens={sens}')
     
     axes[1].set_xlabel('FAR')
     axes[1].set_ylabel('N')
-    axes[1].set_title('NPC: FAR vs N (90% Power)')
+    axes[1].set_title('MPC: FAR vs N (90% Power, baseline eligibility)')
     axes[1].legend()
     axes[1].grid(True, alpha=0.3)
     axes[1].text(-0.1, 1.05, 'B', transform=axes[1].transAxes,

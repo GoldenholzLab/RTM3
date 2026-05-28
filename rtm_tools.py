@@ -10,6 +10,13 @@ import matplotlib.lines as mlines
 from matplotlib.lines import Line2D
 from joblib import Parallel, delayed
 import scipy.stats as stats
+from plotting_tools import analyze_placebo_response
+
+
+def _require_baseline_eligibility(use_baseline):
+    if not use_baseline:
+        raise ValueError('Pre-baseline eligibility is retired for this paper; use_baseline must be True.')
+
 
 # modify the test period seizure rate based on treatment effect
 def treat_one_patient(diaryTEST, treatment_effect):
@@ -32,9 +39,97 @@ def choose_seizure_frequency():
     return get_mSF(requested_msf=-1)
 
 
+def simplified_patient_generator(mSF=None, scale=CONST.MONTHLY_STD):
+    if mSF is None:
+        mSF = choose_seizure_frequency()
+
+    diaryPRE = np.random.normal(loc=mSF, scale=scale, size=1)
+    diaryBASELINE = np.random.normal(loc=mSF, scale=scale, size=1)
+    diaryTEST = np.random.normal(loc=mSF, scale=scale, size=1)
+
+    diaryPRE[diaryPRE < 0] = 0
+    diaryBASELINE[diaryBASELINE < 0] = CONST.EPSILON
+    diaryTEST[diaryTEST < 0] = 0
+
+    return diaryPRE, diaryBASELINE, diaryTEST, mSF
+
+
+def keepEligible(cohort_data, eligibility_min, use_baseline=True):
+    _require_baseline_eligibility(use_baseline)
+    eligible_data = []
+    for patient in cohort_data:
+        if patient['diaryBASELINE'] >= eligibility_min:
+            eligible_data.append(patient)
+    return eligible_data
+
+
+def generate_simplified_cohort(num_patients=CONST.COHORT_SIZE, STD=CONST.MONTHLY_STD, eligibility_min=0):
+    cohort_data = []
+    per_arm = num_patients // 2
+
+    for _ in range(per_arm):
+        diaryPRE, diaryBASELINE, diaryTEST, mSF = simplified_patient_generator(mSF=None, scale=STD)
+        cohort_data.append({
+            'diaryPRE': diaryPRE[0],
+            'diaryBASELINE': diaryBASELINE[0],
+            'diaryTEST': diaryTEST[0],
+            'mSF': mSF[0],
+            'PC': 100*(1 - diaryTEST[0] / diaryBASELINE[0])
+        })
+
+    return pd.DataFrame(keepEligible(cohort_data, eligibility_min, use_baseline=True))
+
+
+def generated_one_complex_patient(use_baseline=True, sensitivity=1.0, FAR=0.0):
+    _require_baseline_eligibility(use_baseline)
+    preM = CONST.ELIGIBILITY_MONTHS - CONST.TRIAL_BASELINE_MONTHS
+    daysNeeded = (preM + CONST.TRIAL_BASELINE_MONTHS + CONST.TRIAL_TEST_MONTHS) * CONST.DAYS_PER_MONTH
+    mSF = choose_seizure_frequency()
+
+    dailyDiary = simulator_base(sampRATE=1, number_of_days=daysNeeded, defaultSeizureFreq=mSF)
+    monthlyDiary = downsample(x=dailyDiary, byHowmuch=CONST.DAYS_PER_MONTH)
+
+    monthlyDiary = (sensitivity * monthlyDiary).astype(int)
+    monthlyDiary = monthlyDiary + np.random.poisson(FAR*CONST.DAYS_PER_MONTH, size=len(monthlyDiary))
+    monthlyDiary = monthlyDiary - int(FAR*CONST.DAYS_PER_MONTH)
+    monthlyDiary[monthlyDiary < 0] = 0
+
+    diaryPre = np.mean(monthlyDiary[:preM]) if preM > 0 else np.nan
+    diaryBaseline = np.mean(monthlyDiary[preM:(preM + CONST.TRIAL_BASELINE_MONTHS)])
+    if diaryBaseline < CONST.EPSILON:
+        diaryBaseline = CONST.EPSILON
+    diaryTest = np.mean(monthlyDiary[(preM + CONST.TRIAL_BASELINE_MONTHS):])
+
+    # compute an effective mSF
+    dailyDiary = simulator_base(sampRATE=1, number_of_days=CONST.DAYS_PER_MONTH*36, defaultSeizureFreq=mSF)
+    monthlyDiary36 = downsample(x=dailyDiary, byHowmuch=CONST.DAYS_PER_MONTH)
+    effective_mSF = np.mean(monthlyDiary36)
+
+    return diaryPre, diaryBaseline, diaryTest, effective_mSF
+
+
+def generate_complex_cohort(num_patients=CONST.COHORT_SIZE, eligibility_min=0, use_baseline=True,
+                            sensitivity=1.0, FAR=0.0):
+    _require_baseline_eligibility(use_baseline)
+    cohort_data = []
+    per_arm = num_patients // 2
+    for _ in range(per_arm):
+        diaryPre, diaryBASELINE, diaryTEST, mSF = generated_one_complex_patient(
+            use_baseline=use_baseline, sensitivity=sensitivity, FAR=FAR)
+        cohort_data.append({
+            'diaryPRE': diaryPre,
+            'diaryBASELINE': diaryBASELINE,
+            'diaryTEST': diaryTEST,
+            'mSF': mSF, # this used to be mSF[0] but mSF is now a scalar, not an array
+            'PC': 100*(1 - diaryTEST / diaryBASELINE)
+        })
+    return pd.DataFrame(keepEligible(cohort_data, eligibility_min, use_baseline=use_baseline))
+
+
 def generated_one_complex_patient_v2(use_baseline, 
             sensitivity, FAR, eligibility_min, eligibility_monthly_min,
             eligibility_longest_szfree,correct_FAR):
+    _require_baseline_eligibility(use_baseline)
     if use_baseline:
         pre_months = 0
         pre_days = 0
@@ -78,7 +173,12 @@ def generated_one_complex_patient_v2(use_baseline,
     test_end = test_start + CONST.TRIAL_TEST_MONTHS
     diaryTest = np.mean(monthlyDiary[test_start:test_end])    
 
-    return eligibleTF, diaryBaseline, diaryTest, mSF
+    # compute an effective mSF
+    dailyDiary = simulator_base(sampRATE=1, number_of_days=CONST.DAYS_PER_MONTH*36, defaultSeizureFreq=mSF)
+    monthlyDiary36 = downsample(x=dailyDiary, byHowmuch=CONST.DAYS_PER_MONTH)
+    effective_mSF = np.mean(monthlyDiary36)
+
+    return eligibleTF, diaryBaseline, diaryTest, effective_mSF
 
 
 def check_eligibility(dailyDiary, monthlyDiary, eligibility_min, eligibility_monthly_min, 
@@ -121,6 +221,7 @@ def generate_complex_cohort_v2(num_patients,eligibility_min,use_baseline,
                             eligibility_monthly_min,
                             eligibility_longest_szfree,
                             correct_FAR):
+    _require_baseline_eligibility(use_baseline)
 
     cohort_data = []
     for _ in range(num_patients):
@@ -135,7 +236,7 @@ def generate_complex_cohort_v2(num_patients,eligibility_min,use_baseline,
                     'RTM_tf': RTM_tester(diaryBASELINE, diaryTEST, mSF, sensitivity),
                     'diaryBASELINE': diaryBASELINE,
                     'diaryTEST': diaryTEST,
-                    'mSF': mSF[0],
+                    'mSF': np.asarray(mSF).reshape(-1)[0],
                     'PC': 100*(1 - diaryTEST / diaryBASELINE)
                 })
     return pd.DataFrame(cohort_data)    
@@ -148,6 +249,7 @@ def RTM_tester(diaryBASELINE, diaryTEST, mSF_real, sensitivity):
     return False
 
 def process_sensitivity(sensitivity,FAR,num_patients,correct_FAR,use_baseline,sz_min=4,sz_monthly_min=3,sz_longest_free=25):
+    _require_baseline_eligibility(use_baseline)
     cohort_df = generate_complex_cohort_v2(num_patients=num_patients,
                         eligibility_min=sz_min, use_baseline=use_baseline,
                         sensitivity=sensitivity, FAR=FAR,
@@ -175,8 +277,90 @@ def process_sensitivity(sensitivity,FAR,num_patients,correct_FAR,use_baseline,sz
         'eligibility_longest_szfree': sz_longest_free
     }
 
+def _median_with_ci(values, confidence=0.95):
+    values = np.asarray(values, dtype=float)
+    values = np.sort(values[~np.isnan(values)])
+    n_values = len(values)
+    if n_values == 0:
+        return np.nan, np.nan, np.nan
+    if n_values == 1:
+        median = float(values[0])
+        return median, median, median
+
+    alpha = 1.0 - confidence
+    lower_index = int(stats.binom.ppf(alpha / 2.0, n_values, 0.5)) - 1
+    upper_index = int(stats.binom.isf(alpha / 2.0, n_values, 0.5))
+    lower_index = max(0, lower_index)
+    upper_index = min(n_values - 1, upper_index)
+    return float(np.nanmedian(values)), float(values[lower_index]), float(values[upper_index])
+
+def process_sensitivity_mpc_ci(sensitivity,FAR,num_patients,correct_FAR,use_baseline,
+                               sz_min=4,sz_monthly_min=3,sz_longest_free=25,
+                               confidence=0.95):
+    _require_baseline_eligibility(use_baseline)
+    cohort_df = generate_complex_cohort_v2(num_patients=num_patients,
+                        eligibility_min=sz_min, use_baseline=use_baseline,
+                        sensitivity=sensitivity, FAR=FAR,
+                        eligibility_monthly_min=sz_monthly_min,
+                        eligibility_longest_szfree=sz_longest_free,
+                        correct_FAR=correct_FAR)
+    fraction_eligible = np.sum(cohort_df['eligibleTF']) / num_patients
+    cohort2 = cohort_df[cohort_df['eligibleTF'] == True]
+    if len(cohort2) == 0:
+        frac_RTM = np.nan
+        mpc_median, mpc_ci_lo, mpc_ci_hi = np.nan, np.nan, np.nan
+    else:
+        frac_RTM = np.sum(cohort2['RTM_tf']) / len(cohort2)
+        mpc_median, mpc_ci_lo, mpc_ci_hi = _median_with_ci(cohort2['PC'], confidence=confidence)
+    return {
+        'sensitivity': sensitivity,
+        'FAR': FAR,
+        'use_baseline': use_baseline,
+        'correct_FAR': correct_FAR,
+        'fraction_eligible': fraction_eligible,
+        'n_eligible': len(cohort2),
+        'frac_RTM': frac_RTM,
+        'MPC': mpc_median,
+        'MPC_median': mpc_median,
+        'MPC_ci_lo': mpc_ci_lo,
+        'MPC_ci_hi': mpc_ci_hi,
+        'MPC_ci_confidence': confidence,
+        'ekligibility_min': sz_min,
+        'eligibility_monthly_min': sz_monthly_min,
+        'eligibility_longest_szfree': sz_longest_free
+    }
+
+def run_mpc_ci_sensitivity_and_far(use_baseline=True,num_patients=50000,fn='rtm_test123_mpc_ci_results.csv',
+                                   confidence=0.95,sensitivity_values=None,far_values=None):
+    _require_baseline_eligibility(use_baseline)
+    if sensitivity_values is None:
+        sensitivity_values = np.linspace(0.1, 1.0, 10)
+    if far_values is None:
+        far_values = np.linspace(0.0, 1.0, 11)
+
+    rows = []
+    for correct_FAR in (True, False):
+        for sensitivity in sensitivity_values:
+            rows.append(process_sensitivity_mpc_ci(
+                sensitivity, 0.0, num_patients, correct_FAR, use_baseline,
+                sz_min=4, sz_monthly_min=3, sz_longest_free=25,
+                confidence=confidence))
+    for correct_FAR in (True, False):
+        for FAR in far_values:
+            if FAR == 0.0:
+                continue
+            rows.append(process_sensitivity_mpc_ci(
+                1.0, FAR, num_patients, correct_FAR, use_baseline,
+                sz_min=4, sz_monthly_min=3, sz_longest_free=25,
+                confidence=confidence))
+
+    results = pd.DataFrame(rows)
+    results.to_csv(fn, index=False)
+    return results
+
 def test1_sensitivity_par(use_baseline=True,num_patients=1000000):
     # note the eligibility rules come from Krauss et al 2022 cenobamate trial
+    _require_baseline_eligibility(use_baseline)
     results = []
     correct_FAR = True
     results = Parallel(n_jobs=-1)(delayed(process_sensitivity)
@@ -185,6 +369,7 @@ def test1_sensitivity_par(use_baseline=True,num_patients=1000000):
 
 def test2_FAR_par(use_baseline=True, correct_FAR=True,num_patients=1000000):
     # note the eligibility rules come from Krauss et al 2022 cenobamate trial
+    _require_baseline_eligibility(use_baseline)
 
     results = []
     results = Parallel(n_jobs=-1)(delayed(process_sensitivity)
@@ -194,6 +379,7 @@ def test2_FAR_par(use_baseline=True, correct_FAR=True,num_patients=1000000):
 
 def process_efficacy(sensitivity,FAR,num_patients,correct_FAR,use_baseline,
                 sz_min,sz_monthly_min,sz_longest_free, drug_effect, Nlist):
+    _require_baseline_eligibility(use_baseline)
 
     ## generate until we have enough eligible patients
     pcb_PC = []
@@ -284,6 +470,7 @@ def test3_N_for_efficacy_par(sensitivity,FAR,sz_min,sz_monthly_min,
                 sz_longest_free,num_trials,num_patients,drug_effect,
                 Nlist,use_baseline,correct_FAR):
     # note the eligibility rules come from Krauss et al 2022 cenobamate trial
+    _require_baseline_eligibility(use_baseline)
     
     
     results = []
@@ -312,6 +499,7 @@ def test3_N_for_efficacy_par(sensitivity,FAR,sz_min,sz_monthly_min,
 def test4_N_for_Type1error_par(sensitivity,FAR,sz_min,sz_monthly_min,
                 sz_longest_free,num_trials,num_patients,
                 Nlist,use_baseline,correct_FAR):
+    _require_baseline_eligibility(use_baseline)
     
     # we assume no drug effect for type 1 error
     drug_effect = 0.0
