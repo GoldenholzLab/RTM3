@@ -1,0 +1,11 @@
+{
+  "status": "PASS",
+  "source_and_output_hashes": "match",
+  "main_notebook_images": 2,
+  "appendix_notebook_images": 3,
+  "main_notebook_images_equal_saved_PNGs": true,
+  "DOCX_images_equal_generated_images": true,
+  "live_Zotero_fields_preserved": 17,
+  "post_Word_prose_changes": "only the two requested printed journal-abbreviation corrections",
+  "Word_refresh_and_visual_QA": "completed manually on 2026-09-15; 13-page Word PDF and all four DOCX files reviewed"
+}

@@ -1,0 +1,12 @@
+# Exact direct dependencies used for the September 15, 2026 release.
+# Python 3.12.13; macOS arm64. Other platforms can render fonts differently.
+numpy==2.5.0
+pandas==3.0.3
+scipy==1.18.0
+matplotlib==3.11.0
+pillow==12.2.0
+nbformat==5.11.1
+nbclient==0.11.0
+nbconvert==7.17.1
+ipython==9.17.1
+ipykernel==7.3.0

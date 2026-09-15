@@ -1,0 +1,13 @@
+{
+  "MPC_denominators_complete": true,
+  "additive_raw_thresholds_equivalent_to_primary": true,
+  "exact_oracle_invariant_across_FAR": true,
+  "fixed_and_reselected_perfect_detector_match": true,
+  "fixed_cohort_size_invariant": true,
+  "max_absolute_MPC_difference_primary_vs_original_25day_pp": 2.288329519450791,
+  "max_absolute_eligibility_difference_primary_vs_original_25day_pp": 2.2840000000000025,
+  "max_absolute_observed_RTM_difference_primary_vs_original_25day_pp": 2.491850280183833,
+  "perfect_detector_condition_identical_between_sweeps": true,
+  "primary_rows": 21,
+  "status": "PASS"
+}
