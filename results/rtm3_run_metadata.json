@@ -1,0 +1,117 @@
+{
+  "FAR_correction": "Subtract expected false alarms per 30-day month, then floor at zero.",
+  "FAR_values_per_day": [
+    0.0,
+    0.1,
+    0.2,
+    0.3,
+    0.4,
+    0.5,
+    0.6,
+    0.7,
+    0.8,
+    0.9,
+    1.0
+  ],
+  "RTM_ties": "Exact scaled integer comparisons on the canonical grid; equal distances do not satisfy the strict endpoint.",
+  "additive_threshold_analysis": {
+    "equivalent_total_baseline_threshold": "8 + 60*FAR over the two baseline months.",
+    "outcomes": "Primary expected-monthly-corrected counts with the zero floor.",
+    "selection": "Raw monthly mean >= 4 + 30*FAR and each raw baseline month >= 3 + 30*FAR."
+  },
+  "analysis": "RTM3 canonical reproduction",
+  "analysis_revision": "2026-09-15 shared participant parameters and exact RTM endpoint",
+  "artifact_sha256": {
+    "cohort": "7e348c9fa36b923f15f66cc822b175b7bf9950870c634111ebd3abd59efebdd0",
+    "correction": "a89bdc4e22fed252f79472c2eba11305654771568da947904916746ddfdde09a",
+    "figure_png": "2a61fa8acb50aba194d38a59a0964f30a8d9298e2b214ddcfbd7b56abed60f45",
+    "figure_tif": "f2edfe429d9b3aba156f57dd2370db68518e53e202ab054858089f98a4c70a10",
+    "interval": "74b9d7bf359ae2f97873f0f2201fb84f56d396455df25469591e90002b55fd9b",
+    "primary": "1ad7087be64353e6795d8ababfd0d5dc5a573f24bf20650273ea866cbba75758",
+    "selection": "b3ce0633893cf9dc7d94da50948a3015d8a12c2a5d9d43e8d8016c97bcaad348",
+    "selection_figure": "49487e97c7237428a3c0e47d4eb3027ef8328c5afd72fb28a8d9194399c67790",
+    "threshold": "0529abf22f42dade24de1bfe857c0381a6a7df7d0e6d186c5d1be61b882a1872",
+    "validation": "11b6cd4a370297dba82ba19f90f71e0ed3605d7cb4e703aa3eca28c2efdf492a"
+  },
+  "base_seed": 20260813,
+  "baseline_months": 2,
+  "cohort_generation_diagnostics": {
+    "cycle_phase_handling": "Independent phases for separate histories; frequency and amplitude arrays are fixed per participant.",
+    "long_term_total_sha256": "2a66b529678d29fd1de585ee3bbb015c6d89ac44fd097aca3b2852fc896e0d5f",
+    "n_clustered_participants": 49793,
+    "n_participants_with_nonzero_daily_cycles": 1229,
+    "shared_rate_cluster_status_and_cycle_parameters": true
+  },
+  "common_random_numbers": "All device conditions use the same latent cohort. Sensitivity and FAR realizations are nested within their respective sweeps.",
+  "created_utc": "2026-09-15T22:19:27.880367+00:00",
+  "false_alarm_seed": 20260815,
+  "fixed_cohort_analysis": {
+    "MPC_denominator": "Selected participants with positive measured baseline, reported as n_valid_MPC.",
+    "RTM_denominator": "All selected participants, including zero measured baseline counts.",
+    "selection": "Perfect-detector primary monthly eligibility, reused at every condition.",
+    "undefined_MPC": "Zero measured baseline counts are reported as n_zero_baseline and n_undefined_MPC."
+  },
+  "latent_seed": 20260813,
+  "long_term_frequency_months": 36,
+  "long_term_reference": "Independent 36-month history with the trial participant's sampled rate, cluster status, and cycle frequency/amplitude arrays. Integer total retained for exact RTM comparisons.",
+  "n_patients_per_condition": 100000,
+  "primary_eligibility": {
+    "each_baseline_month_minimum": 3.0,
+    "mean_baseline_monthly_minimum": 4.0,
+    "seizure_free_interval_rule": null
+  },
+  "reference_count_scale": {
+    "primary": "Sensitivity times true long-term frequency is the biological target; it excludes zero-floor bias.",
+    "uncorrected_comparator": "Sensitivity times true long-term frequency plus 30 times FAR."
+  },
+  "runtime_seconds_latent_generation": 24.357853124995017,
+  "script_sha256": "1aa9d6e563c0ef3e6e20af4551e8c660a63793169304ed900d15470162b9040b",
+  "sensitivity_analysis_eligibility": {
+    "maximum_seizure_free_interval_days": 25
+  },
+  "sensitivity_detection_seed": 20260814,
+  "sensitivity_values": [
+    0.1,
+    0.2,
+    0.3,
+    0.4,
+    0.5,
+    0.6,
+    0.7,
+    0.8,
+    0.9,
+    1.0
+  ],
+  "simulator_provenance": {
+    "local_source_sha256": "7c4f1ac426a136b7539ed6ab868164e3af67d2322cb9ed558fe34f5428e3ee9d",
+    "previous_source_sha256": "7c4f1ac426a136b7539ed6ab868164e3af67d2322cb9ed558fe34f5428e3ee9d",
+    "source_file": "realSim.py",
+    "source_migration": "The requested upstream file is byte-identical to the previous local file.",
+    "upstream_commit": "03fdf198d176028e1a495e109029e45f980ba67e",
+    "upstream_repository": "https://github.com/GoldenholzLab/CHOCOLATE",
+    "upstream_source_path": "/Users/dgoldenh/Documents/GitHub/CHOCOLATE/realSim.py",
+    "upstream_source_sha256": "7c4f1ac426a136b7539ed6ab868164e3af67d2322cb9ed558fe34f5428e3ee9d"
+  },
+  "software": {
+    "matplotlib": "3.11.0",
+    "numpy": "2.5.0",
+    "pandas": "3.0.3",
+    "platform": "macOS-26.7-arm64-arm-64bit",
+    "python": "3.12.13",
+    "scipy": "1.18.0"
+  },
+  "test_months": 3,
+  "validation": {
+    "MPC_denominators_complete": true,
+    "additive_raw_thresholds_equivalent_to_primary": true,
+    "exact_oracle_invariant_across_FAR": true,
+    "fixed_and_reselected_perfect_detector_match": true,
+    "fixed_cohort_size_invariant": true,
+    "max_absolute_MPC_difference_primary_vs_original_25day_pp": 2.288329519450791,
+    "max_absolute_eligibility_difference_primary_vs_original_25day_pp": 2.2840000000000025,
+    "max_absolute_observed_RTM_difference_primary_vs_original_25day_pp": 2.491850280183833,
+    "perfect_detector_condition_identical_between_sweeps": true,
+    "primary_rows": 21,
+    "status": "PASS"
+  }
+}
