@@ -29,6 +29,76 @@ def load_results(directory=Path("results")):
     return results
 
 
+def load_paired_results(directory=Path("results/paired_type3")):
+    """Load the new replay results; notebook execution never runs the simulation."""
+    directory = Path(directory)
+    metadata = json.loads((directory / "paired_metadata.json").read_text())
+    for filename, expected in metadata["artifact_sha256"].items():
+        if hashlib.sha256((directory / filename).read_bytes()).hexdigest() != expected:
+            raise AssertionError(f"Paired artifact hash mismatch: {filename}")
+    return {"summary": pd.read_csv(directory / "paired_summary.csv"), "metadata": metadata,
+            "validation": json.loads((directory / "paired_validation.json").read_text()),
+            "directory": directory}
+
+
+def paired_condition_labels(frame):
+    return [f"s={s:.1f}; FAR={f:.1f}/day" for s, f in zip(frame.sensitivity, frame.FAR)]
+
+
+def show_paired_results(paired):
+    """Every requested condition, four paired cells, both denominators and diagnostics."""
+    frame = paired["summary"]
+    labels = paired_condition_labels(frame)
+    display(Markdown("### Paired classification counts"))
+    display(pd.DataFrame({"Condition": labels, "Selected n": frame.n_selected,
+        "Both RTM n": frame.n_both_RTM, "Measurement-only n": frame.n_measurement_only,
+        "Latent-only n": frame.n_latent_only, "Neither RTM n": frame.n_neither_RTM
+    }).style.hide(axis="index"))
+    display(Markdown("### Paired prevalence and discordance"))
+    display(pd.DataFrame({"Condition": labels,
+        "Measured RTM %": 100*frame.measured_RTM_fraction,
+        "Latent RTM %": 100*frame.latent_RTM_fraction,
+        "Latent-only / selected %": 100*frame.latent_only_fraction_selected,
+        "Measured minus latent, pp": 100*frame.net_measured_minus_latent_fraction
+    }).style.hide(axis="index").format(precision=2))
+    display(Markdown("### Measurement-only fractions and conditional 95% Wilson intervals"))
+    display(pd.DataFrame({"Condition": labels, "Measured RTM n": frame.n_measured_RTM,
+        "Measurement-only / selected %, 95% CI": [f"{100*v:.2f} ({100*lo:.2f} to {100*hi:.2f})" for v,lo,hi in zip(frame.measurement_only_fraction_selected,frame.measurement_only_selected_ci_lo,frame.measurement_only_selected_ci_hi)],
+        "Measurement-only / measured RTM %, 95% CI": [f"{100*v:.2f} ({100*lo:.2f} to {100*hi:.2f})" for v,lo,hi in zip(frame.measurement_only_fraction_measured_RTM,frame.measurement_only_measured_RTM_ci_lo,frame.measurement_only_measured_RTM_ci_hi)]
+    }).style.hide(axis="index"))
+    display(Markdown("### Retained latent eligibility and baseline diagnostics"))
+    display(pd.DataFrame({"Condition": labels, "Selected n": frame.n_selected,
+        "Latent eligible n": frame.n_selected_latent_eligible,
+        "Latent ineligible n": frame.n_selected_latent_ineligible,
+        "Zero true baseline n": frame.n_selected_zero_true_baseline
+    }).style.hide(axis="index"))
+    low, middle, perfect, alarm_low, alarm_high = [row for _, row in frame.iterrows()]
+    display(Markdown(f"""At 10% sensitivity and no false alarms, {low.n_measurement_only:,.0f} of {low.n_selected:,.0f} selected participants had measurement-only RTM ({100*low.measurement_only_fraction_selected:.2f}%). They represented {100*low.measurement_only_fraction_measured_RTM:.2f}% of the {low.n_measured_RTM:,.0f} participants with measured RTM. Reverse discordance affected {low.n_latent_only:,.0f} participants ({100*low.latent_only_fraction_selected:.2f}%), leaving a net measured-minus-latent difference of {100*low.net_measured_minus_latent_fraction:.2f} percentage points. At 50% sensitivity, the primary measurement-only fraction was {100*middle.measurement_only_fraction_selected:.2f}% and the net difference was {100*middle.net_measured_minus_latent_fraction:.2f} points.
+
+At FAR 0.1/day with perfect sensitivity, {alarm_low.n_measurement_only:,.0f} of {alarm_low.n_selected:,.0f} selected participants had measurement-only RTM ({100*alarm_low.measurement_only_fraction_selected:.2f}%). At FAR 1.0/day, {alarm_high.n_measurement_only:,.0f} of {alarm_high.n_selected:,.0f} did ({100*alarm_high.measurement_only_fraction_selected:.2f}%); these accounted for {100*alarm_high.measurement_only_fraction_measured_RTM:.2f}% of measured RTM. The latter condition also had {alarm_high.n_latent_only:,.0f} latent-only cases ({100*alarm_high.latent_only_fraction_selected:.2f}%), so its net prevalence difference was {100*alarm_high.net_measured_minus_latent_fraction:.2f} points. Perfect detection had {perfect.n_both_RTM:,.0f} RTM cases on both scales and no discordant cases.
+
+The FAR 0.1/day and 1.0/day cohorts retained {alarm_low.n_selected_latent_ineligible:,.0f} and {alarm_high.n_selected_latent_ineligible:,.0f} participants who failed latent eligibility, including {alarm_low.n_selected_zero_true_baseline:,.0f} and {alarm_high.n_selected_zero_true_baseline:,.0f} with zero true baseline. These participants contribute to every full-selected denominator. Their inclusion is part of the detector-selected question, not a missing-data exception.
+
+The gross measurement-only category and reverse discordance describe two directions of paired classification change. Their difference gives the net prevalence change within a condition; neither quantity estimates an exclusive biological mechanism. Comparisons between detector conditions also reflect changing enrollment. No MPC endpoint is calculated in this paired analysis."""))
+
+
+def show_paired_reproducibility(paired):
+    metadata = paired["metadata"]
+    validation = paired["validation"]
+    assert validation["status"] == "PASS"
+    assert metadata["all_21_released_counts_match"]
+    display(Markdown("The separate replay command generated the new participant audit. This notebook reads its saved results and checks their hashes; it does not repeat latent generation or detector replay. The original released metadata below remains unchanged. Full array hashes, detector-grid hashes, environment differences, and per-condition validation are retained in `results/paired_type3/paired_metadata.json` and its companion audit files.\n\n```bash\npython rtm3_paired.py\npython scripts/validate_paired_type3.py\npython -m unittest discover -s tests -p test_rtm3_paired.py -v\n```"))
+    print(json.dumps({"paired_analysis": metadata["analysis"], "source_commit": metadata["source_commit"],
+        "seeds": {k:metadata[k] for k in ["latent_seed","sensitivity_detection_seed","false_alarm_seed"]},
+        "source_array_hashes": metadata["source_array_hashes"],
+        "source_file_hashes": metadata["source_file_hashes"],
+        "environment_mismatches_from_release": metadata["environment_mismatches_from_release"],
+        "match_scope": metadata["match_scope"],
+        "independent_integer_classification_crosscheck": metadata["independent_integer_classification_crosscheck"],
+        "selected_records_independently_checked": validation["records_checked"],
+        "artifact_sha256": metadata["artifact_sha256"], "validation_status": validation["status"]}, indent=2))
+
+
 def condition_labels(frame):
     return np.where(frame.sweep.eq("sensitivity"),
                     frame.sensitivity.map(lambda x: f"Sensitivity {100*x:.0f}%"),
@@ -112,6 +182,10 @@ def comparison_figure(frame, group, title, output=None):
                 axis.set_ylabel(ylabel)
                 axis.grid(alpha=.25)
                 axis.spines[["top", "right"]].set_visible(False)
+        # Presentation-only limit for this figure's false-alarm selection panel.
+        if group == "cohort_strategy" and title == "Fixed versus reselected cohorts" and sweep == "FAR":
+            axes[row, 0].set_ylim(0, 40)
+            axes[row, 0].set_yticks(np.arange(0, 41, 10))
     handles, labels = axes[0, 0].get_legend_handles_labels()
     fig.suptitle(title, fontsize=15)
     fig.legend(handles, labels, loc="lower center", ncol=1 if len(labels) > 2 else 2, fontsize=9)
@@ -158,6 +232,24 @@ def show_design(results):
     display(metadata["cohort_generation_diagnostics"])
 
 
+def show_fixed_membership_diagnostics(results):
+    """Report retained identities that fail condition-specific enrollment."""
+    fixed = results["cohort"].query("cohort_strategy == 'Fixed perfect-detector cohort'")
+    table = pd.DataFrame({
+        "Condition": condition_labels(fixed),
+        "Retained n": fixed.n_eligible,
+        "Retained meeting current criteria n": fixed.n_eligible - fixed.n_selected_failing_current_eligibility,
+        "Retained failing current criteria n": fixed.n_selected_failing_current_eligibility,
+        "Eligible in all potential participants n": fixed.n_currently_eligible,
+    })
+    display(table.style.hide(axis="index"))
+
+
+def show_recorded_metadata(results):
+    """Preserve the released run record separately from the reporting build."""
+    display(Markdown("```json\n" + json.dumps(results["metadata"], indent=2, sort_keys=True) + "\n```"))
+
+
 def validate_artifacts(results, root=Path.cwd()):
     root = Path(root)
     metadata = results["metadata"]
@@ -186,7 +278,7 @@ Holding the perfect-detector cohort fixed gave observed RTM of {100*flo.observed
 
 Moving expected false alarms from the counts to the eligibility thresholds produced exactly identical results. It does not reduce the remaining random false-alarm error.
 
-Retaining the original 25-day rule changed selection by at most {validity['max_absolute_eligibility_difference_primary_vs_original_25day_pp']:.2f} percentage points, observed RTM by {validity['max_absolute_observed_RTM_difference_primary_vs_original_25day_pp']:.2f} points, and MPC by {validity['max_absolute_MPC_difference_primary_vs_original_25day_pp']:.2f} points. The main directions remained. Alternative interval rules gave different results because observed alarms and oracle seizure labels define different zero-day runs. Compared with the main analysis, the observed-day rule changed observed RTM and MPC less than the original rule did; the oracle-day rule changed them more. These comparisons concern the largest absolute differences across the sweep, not a uniform ordering at every condition.
+Retaining the original 25-day rule changed selection by at most {validity['max_absolute_eligibility_difference_primary_vs_original_25day_pp']:.2f} percentage points, observed RTM by {validity['max_absolute_observed_RTM_difference_primary_vs_original_25day_pp']:.2f} points, and MPC by {validity['max_absolute_MPC_difference_primary_vs_original_25day_pp']:.2f} points. The main directions remained. Alternative interval rules gave different results because observed alarms and oracle seizure labels define different zero-day runs. The original rule's larger overall maxima include the sensitivity sweep; the observed-day and oracle-day alternatives were evaluated only on the 11-point FAR sweep. On that common FAR sweep, the observed-day and original rules have equal maximum absolute changes from the main analysis: 0.9571218755 percentage points for observed RTM and 0.8658008658 percentage points for MPC. The oracle-day rule has larger maxima on that same FAR grid. These comparisons concern maxima across conditions, not a uniform ordering at every condition.
 
 Without any count correction or threshold adjustment, FAR one/day selected {raw.n_eligible:,.0f} participants, observed RTM was {100*raw.observed_RTM_fraction:.1f}%, and MPC was {raw.MPC_median:.1f}%. This does not establish that uncorrected counts are preferable: alarms allow low-seizure-rate participants to pass fixed raw thresholds and contribute to both the baseline denominator and test counts. The reference now includes expected alarms so that the RTM comparison stays on the observation scale. Exact oracle removal retains the perfect-detector results at every FAR because it removes all realized simulated alarms. It is a diagnostic, not an available correction for unlabeled clinical events."""))
 

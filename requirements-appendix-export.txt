@@ -1,0 +1,16 @@
+# Remote presentation build only. Does not replace requirements-reproduction.txt.
+# Python 3.12.14; external pandoc 3.1.3 is also required for DOCX/HTML export.
+numpy==2.3.5
+pandas==2.2.3
+scipy==1.17.0
+matplotlib==3.10.8
+nbformat==5.11.1
+nbclient==0.11.0
+ipython==9.17.1
+python-docx==1.2.0
+beautifulsoup4==4.15.0
+lxml==6.1.1
+jinja2==3.1.6
+matplotlib-inline==0.2.2
+ipykernel==7.4.0
+jupyter-client==8.10.0

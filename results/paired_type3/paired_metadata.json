@@ -1,0 +1,877 @@
+{
+  "analysis": "Operational participant-level measurement-only RTM among detector-selected participants",
+  "created_utc": "2026-10-01T02:51:28.536876+00:00",
+  "source_commit": "59b47a5564342d4b2695307a341fbd0ff1d90091",
+  "base_seed": 20260813,
+  "latent_seed": 20260813,
+  "sensitivity_detection_seed": 20260814,
+  "false_alarm_seed": 20260815,
+  "n_potential_participants": 100000,
+  "conditions": [
+    [
+      1,
+      0
+    ],
+    [
+      5,
+      0
+    ],
+    [
+      10,
+      0
+    ],
+    [
+      10,
+      1
+    ],
+    [
+      10,
+      10
+    ]
+  ],
+  "condition_encoding": "Integer tenths: sensitivity, FAR per day; condition_id indexes this list; participant_id is original zero-based index.",
+  "eligibility": "Each corrected baseline month >=3 and two-month mean >=4; no 25-day rule; no latent/perfect-detector eligibility filter.",
+  "classification": "Strict B>reference and |T-reference|<B-reference, using exact integer comparisons; measured reference sensitivity*L/36; latent reference L/36.",
+  "primary": "Measured RTM and not latent RTM divided by all selected in the same condition.",
+  "secondary": "Measured RTM and not latent RTM divided by measured RTM in the same condition.",
+  "uncertainty": "95% Wilson intervals from the unchanged canonical helper for measurement-only among selected and among measured RTM; conditional Monte Carlo/binomial uncertainty under this simulation, not real-world clinical uncertainty. No significance tests or between-condition confidence intervals.",
+  "limitation": "An operational simulation-defined paired category covering measurement noise, FAR correction and flooring; not exclusive biological attribution or an additive causal decomposition. Gross discordance differs from net prevalence change and MPC. Within-condition pairing holds selection fixed; cross-condition differences combine selection and measurement. The independent 36-month reference is a finite-history estimate, not a known infinite-horizon mean.",
+  "replayed_all_21_grid_rows_before_subsetting": true,
+  "shared_perfect_control_checked": true,
+  "latent_generation": {
+    "seed": 20260813,
+    "n_patients": 100000,
+    "seconds": 40.99431494199962,
+    "diagnostics": {
+      "shared_rate_cluster_status_and_cycle_parameters": true,
+      "n_clustered_participants": 49793,
+      "n_participants_with_nonzero_daily_cycles": 1229,
+      "long_term_total_sha256": "2a66b529678d29fd1de585ee3bbb015c6d89ac44fd097aca3b2852fc896e0d5f",
+      "cycle_phase_handling": "Independent phases for separate histories; frequency and amplitude arrays are fixed per participant."
+    },
+    "software": {
+      "python": "3.12.14",
+      "platform": "Linux-6.18.44-x86_64-with-glibc2.39",
+      "numpy": "2.3.5",
+      "scipy": "1.17.0",
+      "pandas": "2.2.3",
+      "matplotlib": "3.10.8"
+    },
+    "arrays": {
+      "latent_daily": {
+        "shape": [
+          100000,
+          150
+        ],
+        "dtype": "int16",
+        "sha256": "86418f8c2abc864858e95612ca24820a99db71f0521911b360961bafde6d20d0"
+      },
+      "sampled_monthly_rate": {
+        "shape": [
+          100000
+        ],
+        "dtype": "float64",
+        "sha256": "f192008c057d45e8b706f8e94fb43d4876cd79c06cc2522b4dc2e2504846cae2"
+      },
+      "effective_monthly_rate": {
+        "shape": [
+          100000
+        ],
+        "dtype": "float64",
+        "sha256": "33f89bcb2c7351f6dd3f8953e418383d77d524c03a3ea82b755dbfd047185935"
+      },
+      "long_term_total": {
+        "shape": [
+          100000
+        ],
+        "dtype": "int64",
+        "sha256": "2a66b529678d29fd1de585ee3bbb015c6d89ac44fd097aca3b2852fc896e0d5f"
+      }
+    },
+    "source_sha256": {
+      "realSim.py": "7c4f1ac426a136b7539ed6ab868164e3af67d2322cb9ed558fe34f5428e3ee9d",
+      "reproduce_rtm3.py": "1aa9d6e563c0ef3e6e20af4551e8c660a63793169304ed900d15470162b9040b"
+    }
+  },
+  "software": {
+    "python": "3.12.14",
+    "platform": "Linux-6.18.44-x86_64-with-glibc2.39",
+    "numpy": "2.3.5",
+    "scipy": "1.17.0",
+    "pandas": "2.2.3",
+    "matplotlib": "3.10.8"
+  },
+  "environment_mismatches_from_release": {
+    "matplotlib": {
+      "release": "3.11.0",
+      "replay": "3.10.8"
+    },
+    "numpy": {
+      "release": "2.5.0",
+      "replay": "2.3.5"
+    },
+    "pandas": {
+      "release": "3.0.3",
+      "replay": "2.2.3"
+    },
+    "platform": {
+      "release": "macOS-26.7-arm64-arm-64bit",
+      "replay": "Linux-6.18.44-x86_64-with-glibc2.39"
+    },
+    "python": {
+      "release": "3.12.13",
+      "replay": "3.12.14"
+    },
+    "scipy": {
+      "release": "1.18.0",
+      "replay": "1.17.0"
+    }
+  },
+  "match_scope": "Long-term total hash and selected/measured RTM counts at all 21 released grid rows match exactly; daily source hashes were not recorded by the release, so no claim of released daily-array byte identity is made.",
+  "source_array_hashes": {
+    "latent_daily": {
+      "shape": [
+        100000,
+        150
+      ],
+      "dtype": "int16",
+      "sha256": "86418f8c2abc864858e95612ca24820a99db71f0521911b360961bafde6d20d0"
+    },
+    "sampled_monthly_rate": {
+      "shape": [
+        100000
+      ],
+      "dtype": "float64",
+      "sha256": "f192008c057d45e8b706f8e94fb43d4876cd79c06cc2522b4dc2e2504846cae2"
+    },
+    "effective_monthly_rate": {
+      "shape": [
+        100000
+      ],
+      "dtype": "float64",
+      "sha256": "33f89bcb2c7351f6dd3f8953e418383d77d524c03a3ea82b755dbfd047185935"
+    },
+    "long_term_total": {
+      "shape": [
+        100000
+      ],
+      "dtype": "int64",
+      "sha256": "2a66b529678d29fd1de585ee3bbb015c6d89ac44fd097aca3b2852fc896e0d5f"
+    }
+  },
+  "detector_array_hashes": [
+    {
+      "sweep": "sensitivity",
+      "sensitivity": 0.1,
+      "FAR": 0.0,
+      "observed_daily": {
+        "shape": [
+          100000,
+          150
+        ],
+        "dtype": "int16",
+        "sha256": "56e780d4995f61f7669828aa289807e26ef074700ad8bdeaa9ece417eeeae719"
+      },
+      "corrected_monthly": {
+        "shape": [
+          100000,
+          5
+        ],
+        "dtype": "int64",
+        "sha256": "27ced12d1231426a94bb6c69d3252536ceae0644c4df93ef11c994fdf4a568c5"
+      },
+      "selected_ids": {
+        "shape": [
+          2180
+        ],
+        "dtype": "int64",
+        "sha256": "d62fe5a77ad65ef4e319f7620de023e4e1cc5cb6f8455e9f829161d518b10ff7"
+      }
+    },
+    {
+      "sweep": "sensitivity",
+      "sensitivity": 0.2,
+      "FAR": 0.0,
+      "observed_daily": {
+        "shape": [
+          100000,
+          150
+        ],
+        "dtype": "int16",
+        "sha256": "b15978217d9aaacebabd8c5790d686c9a33f7dc39b57594fd4358dc3797f0014"
+      },
+      "corrected_monthly": {
+        "shape": [
+          100000,
+          5
+        ],
+        "dtype": "int64",
+        "sha256": "8ee2c8dab415e353d21521ae8b28b0dbd65c30faef049492a935832143351a51"
+      },
+      "selected_ids": {
+        "shape": [
+          5955
+        ],
+        "dtype": "int64",
+        "sha256": "194fd3f702df4fc8d15e09591a1c97bdab804bfecaf98a570394ad41494c7542"
+      }
+    },
+    {
+      "sweep": "sensitivity",
+      "sensitivity": 0.3,
+      "FAR": 0.0,
+      "observed_daily": {
+        "shape": [
+          100000,
+          150
+        ],
+        "dtype": "int16",
+        "sha256": "8179ae88b77c5b1e050a72cf63523402d56c42850f1e6828b7632eab3144ec86"
+      },
+      "corrected_monthly": {
+        "shape": [
+          100000,
+          5
+        ],
+        "dtype": "int64",
+        "sha256": "c4430c7a8ddbe7a5cade80f3024ef727c9cf22ebadc0fc93ec760510d771a399"
+      },
+      "selected_ids": {
+        "shape": [
+          9824
+        ],
+        "dtype": "int64",
+        "sha256": "8ccb93ccd5432f5fd2c8de1b711d8b144b5b25154994b7f587dd71ed8e829610"
+      }
+    },
+    {
+      "sweep": "sensitivity",
+      "sensitivity": 0.4,
+      "FAR": 0.0,
+      "observed_daily": {
+        "shape": [
+          100000,
+          150
+        ],
+        "dtype": "int16",
+        "sha256": "c4482139de63e23a328f4cb55461c598635bdf73669eb5a8659e6f4e97923fc8"
+      },
+      "corrected_monthly": {
+        "shape": [
+          100000,
+          5
+        ],
+        "dtype": "int64",
+        "sha256": "4ce31b97a7ae7b1c0000cb2c045921034a9635a85db2c8d919cdaf76519db152"
+      },
+      "selected_ids": {
+        "shape": [
+          13845
+        ],
+        "dtype": "int64",
+        "sha256": "5bcd6b99b1ee632f46eb65f9a900edf2c523c8249de26d9d121903d1bf9438c8"
+      }
+    },
+    {
+      "sweep": "sensitivity",
+      "sensitivity": 0.5,
+      "FAR": 0.0,
+      "observed_daily": {
+        "shape": [
+          100000,
+          150
+        ],
+        "dtype": "int16",
+        "sha256": "071eeba8240193d03e01e38a33edab3e8f45aa21bf2cdcdf6dfe3c3c07256b4e"
+      },
+      "corrected_monthly": {
+        "shape": [
+          100000,
+          5
+        ],
+        "dtype": "int64",
+        "sha256": "d0f220a21023c6782065edeb76236d1bd805887fa2e68f3f5aabb05b3ef2b59b"
+      },
+      "selected_ids": {
+        "shape": [
+          17865
+        ],
+        "dtype": "int64",
+        "sha256": "f89fbecef5f2e4715e95af5a24f617dda9fe2e18cd7aaea0b28229ea3b3d0ffa"
+      }
+    },
+    {
+      "sweep": "sensitivity",
+      "sensitivity": 0.6,
+      "FAR": 0.0,
+      "observed_daily": {
+        "shape": [
+          100000,
+          150
+        ],
+        "dtype": "int16",
+        "sha256": "9bb0e7310192d2cf52af274d7d98377d4722c1713a081fc32a15911b8289876b"
+      },
+      "corrected_monthly": {
+        "shape": [
+          100000,
+          5
+        ],
+        "dtype": "int64",
+        "sha256": "72b69bb01af63f27e1636f2b526e1bc8a2cff5665b1300f88fb5b59a04b6bcca"
+      },
+      "selected_ids": {
+        "shape": [
+          21790
+        ],
+        "dtype": "int64",
+        "sha256": "dd3e49b8b70c193aa3d1d64e9f388c27712c443c10113c78209e8e8198736e16"
+      }
+    },
+    {
+      "sweep": "sensitivity",
+      "sensitivity": 0.7,
+      "FAR": 0.0,
+      "observed_daily": {
+        "shape": [
+          100000,
+          150
+        ],
+        "dtype": "int16",
+        "sha256": "5dbfc67d77095a5d05a056de4ae56d7e05f21d4f0c698e4a04cd0532d825620a"
+      },
+      "corrected_monthly": {
+        "shape": [
+          100000,
+          5
+        ],
+        "dtype": "int64",
+        "sha256": "2f8fd1d152b05aed7a57fc6b9262de2b229968ee354db0e881e6fd35152ed0d6"
+      },
+      "selected_ids": {
+        "shape": [
+          25546
+        ],
+        "dtype": "int64",
+        "sha256": "be3acaef2af00fa02a7a5fb76bc8026b68132346f1ba33825802cec1c8c7c989"
+      }
+    },
+    {
+      "sweep": "sensitivity",
+      "sensitivity": 0.8,
+      "FAR": 0.0,
+      "observed_daily": {
+        "shape": [
+          100000,
+          150
+        ],
+        "dtype": "int16",
+        "sha256": "34f4c773fc1f2bb3e74524558d36a34e4743edf99b96a9043feaf1a4555ce557"
+      },
+      "corrected_monthly": {
+        "shape": [
+          100000,
+          5
+        ],
+        "dtype": "int64",
+        "sha256": "7c6f5f318cc8ae32e8569cb3b28be639a375425382f7ba9573f468ad201afc6b"
+      },
+      "selected_ids": {
+        "shape": [
+          29093
+        ],
+        "dtype": "int64",
+        "sha256": "d938ea83ee0ed66b2da30cb22d1580c03d23df875618986be85b540edf145196"
+      }
+    },
+    {
+      "sweep": "sensitivity",
+      "sensitivity": 0.9,
+      "FAR": 0.0,
+      "observed_daily": {
+        "shape": [
+          100000,
+          150
+        ],
+        "dtype": "int16",
+        "sha256": "0eb7a96b949d3ea76be14441cddb945aad97586cc2ef4c69c962f01dd9973a63"
+      },
+      "corrected_monthly": {
+        "shape": [
+          100000,
+          5
+        ],
+        "dtype": "int64",
+        "sha256": "16e05e0168a14edbe7240010eed84c3a059c301cfe241984784bb6fec208feb3"
+      },
+      "selected_ids": {
+        "shape": [
+          32350
+        ],
+        "dtype": "int64",
+        "sha256": "f3438ade36f429319e3b42c02bc8ad694ceb46fd0495604ff96ecccc20d2b633"
+      }
+    },
+    {
+      "sweep": "sensitivity",
+      "sensitivity": 1.0,
+      "FAR": 0.0,
+      "observed_daily": {
+        "shape": [
+          100000,
+          150
+        ],
+        "dtype": "int16",
+        "sha256": "86418f8c2abc864858e95612ca24820a99db71f0521911b360961bafde6d20d0"
+      },
+      "corrected_monthly": {
+        "shape": [
+          100000,
+          5
+        ],
+        "dtype": "int64",
+        "sha256": "5c44a2552c1fdb5e6a7bb8b4e05838ed446f520ab87135cf258d6ab07443e268"
+      },
+      "selected_ids": {
+        "shape": [
+          35393
+        ],
+        "dtype": "int64",
+        "sha256": "dc430863d50058601f6824a10082909fb8e69eaf8a377c16ba1a13229af6875c"
+      }
+    },
+    {
+      "sweep": "FAR",
+      "sensitivity": 1.0,
+      "FAR": 0.0,
+      "observed_daily": {
+        "shape": [
+          100000,
+          150
+        ],
+        "dtype": "int16",
+        "sha256": "86418f8c2abc864858e95612ca24820a99db71f0521911b360961bafde6d20d0"
+      },
+      "corrected_monthly": {
+        "shape": [
+          100000,
+          5
+        ],
+        "dtype": "float64",
+        "sha256": "9a34a9de3c6c7055fdcc5c19692d53a2586daa68be12143f64086401f32b8eff"
+      },
+      "selected_ids": {
+        "shape": [
+          35393
+        ],
+        "dtype": "int64",
+        "sha256": "dc430863d50058601f6824a10082909fb8e69eaf8a377c16ba1a13229af6875c"
+      }
+    },
+    {
+      "sweep": "FAR",
+      "sensitivity": 1.0,
+      "FAR": 0.1,
+      "observed_daily": {
+        "shape": [
+          100000,
+          150
+        ],
+        "dtype": "int16",
+        "sha256": "4afb6682f370d52415a96db36accd1007bf64da2da6b0b3f5ff4fe520498e26a"
+      },
+      "corrected_monthly": {
+        "shape": [
+          100000,
+          5
+        ],
+        "dtype": "float64",
+        "sha256": "5536a7596639f0f3561de10da2c329999132d8728b4d6e2a5361c98142976baf"
+      },
+      "selected_ids": {
+        "shape": [
+          35453
+        ],
+        "dtype": "int64",
+        "sha256": "f3689a2e13e46dcaff07a64c83130d823dc2a1d8144f7d06225069c3ec89fbcc"
+      }
+    },
+    {
+      "sweep": "FAR",
+      "sensitivity": 1.0,
+      "FAR": 0.2,
+      "observed_daily": {
+        "shape": [
+          100000,
+          150
+        ],
+        "dtype": "int16",
+        "sha256": "1a2ad738d99daa04e331e152c39873ca2fc7664936cb6b4cc41d2c9a372978f1"
+      },
+      "corrected_monthly": {
+        "shape": [
+          100000,
+          5
+        ],
+        "dtype": "float64",
+        "sha256": "120c4d996a36e89164cd5f5546102a127b773b971618147405dc54941c08c80c"
+      },
+      "selected_ids": {
+        "shape": [
+          35551
+        ],
+        "dtype": "int64",
+        "sha256": "b2f50ca8604f890d6c58f6d5aa95de0d3c2698f2ee467169b0ae6472a078f7a5"
+      }
+    },
+    {
+      "sweep": "FAR",
+      "sensitivity": 1.0,
+      "FAR": 0.3,
+      "observed_daily": {
+        "shape": [
+          100000,
+          150
+        ],
+        "dtype": "int16",
+        "sha256": "fe81fc03c65444e6caae4937463c5619f6db3deacdeb8e14d49f4e917a1348df"
+      },
+      "corrected_monthly": {
+        "shape": [
+          100000,
+          5
+        ],
+        "dtype": "float64",
+        "sha256": "a54de4233adce8fa1984e530785677229860f8d20946e1d1deff8b00cd795a1a"
+      },
+      "selected_ids": {
+        "shape": [
+          35437
+        ],
+        "dtype": "int64",
+        "sha256": "0f8fa426e13a17d0dfa85e33e2045bad3fea8f1ab9a56547b0945cf5dd472475"
+      }
+    },
+    {
+      "sweep": "FAR",
+      "sensitivity": 1.0,
+      "FAR": 0.4,
+      "observed_daily": {
+        "shape": [
+          100000,
+          150
+        ],
+        "dtype": "int16",
+        "sha256": "462fda1a2c17c215c668c4ced212e35340f418acdf27adea4587ce410444c340"
+      },
+      "corrected_monthly": {
+        "shape": [
+          100000,
+          5
+        ],
+        "dtype": "float64",
+        "sha256": "8059b76dae0da91f7bf74eccdc9d14e45b0d7ccbbcd7531d60dac57eef71213f"
+      },
+      "selected_ids": {
+        "shape": [
+          35512
+        ],
+        "dtype": "int64",
+        "sha256": "e04c42539456cc402694f5e51e61970967c206dc94152ab155edd66445b00b88"
+      }
+    },
+    {
+      "sweep": "FAR",
+      "sensitivity": 1.0,
+      "FAR": 0.5,
+      "observed_daily": {
+        "shape": [
+          100000,
+          150
+        ],
+        "dtype": "int16",
+        "sha256": "4ee5be9f38f0a7a181d4521ec9b25812e8920ae915f98cedd7be186b6a3a1124"
+      },
+      "corrected_monthly": {
+        "shape": [
+          100000,
+          5
+        ],
+        "dtype": "float64",
+        "sha256": "d0800753c6fc4f9e04f77da91757939eab4db1c63713ccaf8b0d071b19e81272"
+      },
+      "selected_ids": {
+        "shape": [
+          35508
+        ],
+        "dtype": "int64",
+        "sha256": "8458bbc1cf435198a405ea69c1e2af04d1a27e5a878358a6107bbc0d6ea0a51d"
+      }
+    },
+    {
+      "sweep": "FAR",
+      "sensitivity": 1.0,
+      "FAR": 0.6,
+      "observed_daily": {
+        "shape": [
+          100000,
+          150
+        ],
+        "dtype": "int16",
+        "sha256": "058bec56d77bbbf6718c85bf4c25e51707f067885959530e849fd339bf86a786"
+      },
+      "corrected_monthly": {
+        "shape": [
+          100000,
+          5
+        ],
+        "dtype": "float64",
+        "sha256": "1e97f975e7d25b1585422874bd6d56d6fde8b30871945f08dded9bf2f6b966e3"
+      },
+      "selected_ids": {
+        "shape": [
+          35462
+        ],
+        "dtype": "int64",
+        "sha256": "ffa8ad19b4ec687eaf00ac077a657b1bc906c23000eef50752d8201410a4939b"
+      }
+    },
+    {
+      "sweep": "FAR",
+      "sensitivity": 1.0,
+      "FAR": 0.7,
+      "observed_daily": {
+        "shape": [
+          100000,
+          150
+        ],
+        "dtype": "int16",
+        "sha256": "3de94c4befe937c24c218d91dd9bc7731749749815938f4e1448571359f0dffe"
+      },
+      "corrected_monthly": {
+        "shape": [
+          100000,
+          5
+        ],
+        "dtype": "float64",
+        "sha256": "339464876d195eefd2948bc8b06fe87362ac14a6372f59f4d5bd3d48bc9b221a"
+      },
+      "selected_ids": {
+        "shape": [
+          35372
+        ],
+        "dtype": "int64",
+        "sha256": "e261d22a1c416b4c82b8b4a86c421db24741a2cb2c141a1e56e660c5b6f7263c"
+      }
+    },
+    {
+      "sweep": "FAR",
+      "sensitivity": 1.0,
+      "FAR": 0.8,
+      "observed_daily": {
+        "shape": [
+          100000,
+          150
+        ],
+        "dtype": "int16",
+        "sha256": "aebf11b644b2f38aa880b8000da52b01a857a2088b66a00443e989a5e353f2aa"
+      },
+      "corrected_monthly": {
+        "shape": [
+          100000,
+          5
+        ],
+        "dtype": "float64",
+        "sha256": "db1ae16c82de68b9e9376819fa9c1603ba80c97be4af51a3fdea91bef3fc8f8f"
+      },
+      "selected_ids": {
+        "shape": [
+          35321
+        ],
+        "dtype": "int64",
+        "sha256": "328638a18ddb3c884f026e18fcece4abfa73a90e54d46abfa99d205dee58748d"
+      }
+    },
+    {
+      "sweep": "FAR",
+      "sensitivity": 1.0,
+      "FAR": 0.9,
+      "observed_daily": {
+        "shape": [
+          100000,
+          150
+        ],
+        "dtype": "int16",
+        "sha256": "09d46860e0e8716bc8589380e62d2c91eaadcb9162a7de68ac5b0ea12786d717"
+      },
+      "corrected_monthly": {
+        "shape": [
+          100000,
+          5
+        ],
+        "dtype": "float64",
+        "sha256": "379716927fd4bc7444af0ba1236bd73b74c2919f3bcbdfd66a6fd9d91035f794"
+      },
+      "selected_ids": {
+        "shape": [
+          35224
+        ],
+        "dtype": "int64",
+        "sha256": "309f1343c034fbc1cb32f9f8fe7b41e888e4aa33a54f7f8230b1d1c7d209e6b4"
+      }
+    },
+    {
+      "sweep": "FAR",
+      "sensitivity": 1.0,
+      "FAR": 1.0,
+      "observed_daily": {
+        "shape": [
+          100000,
+          150
+        ],
+        "dtype": "int16",
+        "sha256": "c43f2fff3be2b2a92fd1217ec112ffe1e4bbfe6ced5eeef52d411cf1962223a8"
+      },
+      "corrected_monthly": {
+        "shape": [
+          100000,
+          5
+        ],
+        "dtype": "float64",
+        "sha256": "afcf592fef530b0137b412af8b5b21f3c3af515279e016963ee619f8a51b43c2"
+      },
+      "selected_ids": {
+        "shape": [
+          35134
+        ],
+        "dtype": "int64",
+        "sha256": "ab9f31d0dbee746d9c0b4fb6874746e5a5419f5847ecefa9ca3af89c255180db"
+      }
+    }
+  ],
+  "all_21_released_counts_match": true,
+  "independent_integer_classification_crosscheck": "All 100,000 participants in all 21 grid rows: exact agreement with canonical strict indicator for measured and latent classifications.",
+  "source_file_hashes": {
+    "realSim.py": "7c4f1ac426a136b7539ed6ab868164e3af67d2322cb9ed558fe34f5428e3ee9d",
+    "reproduce_rtm3.py": "1aa9d6e563c0ef3e6e20af4551e8c660a63793169304ed900d15470162b9040b",
+    "rtm3_paired.py": "1338a05090b1bf8a31addc7c03e8a27ee987725ea10495152933437533b6599c"
+  },
+  "protected_released_file_hashes": {
+    "results/rtm3_primary_results.csv": "1ad7087be64353e6795d8ababfd0d5dc5a573f24bf20650273ea866cbba75758",
+    "results/rtm3_cohort_sensitivity_results.csv": "7e348c9fa36b923f15f66cc822b175b7bf9950870c634111ebd3abd59efebdd0",
+    "results/rtm3_threshold_sensitivity_results.csv": "0529abf22f42dade24de1bfe857c0381a6a7df7d0e6d186c5d1be61b882a1872",
+    "results/rtm3_correction_sensitivity_results.csv": "a89bdc4e22fed252f79472c2eba11305654771568da947904916746ddfdde09a",
+    "results/rtm3_selection_diagnostics.csv": "b3ce0633893cf9dc7d94da50948a3015d8a12c2a5d9d43e8d8016c97bcaad348",
+    "results/rtm3_interval_sensitivity_results.csv": "74b9d7bf359ae2f97873f0f2201fb84f56d396455df25469591e90002b55fd9b",
+    "results/rtm3_run_metadata.json": "d77f7196b75be52ddad6fd92d4ba9f4a5fbc9fa925380a68cf7d1b964237d983",
+    "results/rtm3_validation.json": "11b6cd4a370297dba82ba19f90f71e0ed3605d7cb4e703aa3eca28c2efdf492a"
+  },
+  "artifact_sha256": {
+    "paired_summary.csv": "2e6b1bcec32371d5d809a6763b8289f72521b0221adf584d0b7bae5815c3f9d7",
+    "paired_selected_participants.npz": "80e6dbfaca904e8231420dfc28bf432faaef31b4211762a9e144b84a9f7084b9",
+    "replay_grid_validation.json": "c7e99e98e5824bd4099b8c510dd102e339cf17c00d1ec18d271d30146602b7c4"
+  },
+  "participant_audit_arrays": {
+    "participant_id": {
+      "shape": [
+        126025
+      ],
+      "dtype": "int32",
+      "sha256": "8b1aed2ebcdb3e19c76c0ee554ad747dd87af949154b7416f2a08ac4aaf992a5"
+    },
+    "condition_id": {
+      "shape": [
+        126025
+      ],
+      "dtype": "int8",
+      "sha256": "5b59aa9c36fcce9eeca54ffcde3fd7434952ec08a4418cd949ae769600005333"
+    },
+    "sensitivity_tenths": {
+      "shape": [
+        126025
+      ],
+      "dtype": "int8",
+      "sha256": "6b745544b0b93b16d5963f3e29c3ee1fe275be763584cd34479ebbdd4148f0a4"
+    },
+    "FAR_tenths": {
+      "shape": [
+        126025
+      ],
+      "dtype": "int8",
+      "sha256": "3eb7bc7afb0da44724dd20fafd20ece7c4a3ad71b35fc2fcb0f262e224734aeb"
+    },
+    "true_monthly": {
+      "shape": [
+        126025,
+        5
+      ],
+      "dtype": "int32",
+      "sha256": "a370864b68341895f9dfd9b3d3327a44230eb32cb601f6628599866f5259d367"
+    },
+    "observed_monthly": {
+      "shape": [
+        126025,
+        5
+      ],
+      "dtype": "int32",
+      "sha256": "e520bea40f8e3a9bf251db0bb36059b47cfe53b786bb4535c8a4815f537c888a"
+    },
+    "measured_monthly": {
+      "shape": [
+        126025,
+        5
+      ],
+      "dtype": "int32",
+      "sha256": "e2259d631b98ea8d23c7380dd9fa629003113dc4c165453c8986c31da2cf0efe"
+    },
+    "true_baseline_total": {
+      "shape": [
+        126025
+      ],
+      "dtype": "int64",
+      "sha256": "0d12426c62c627c6dbddb9cd3be7196488755a5d1c308eeb1f054d7d4c3249d7"
+    },
+    "true_test_total": {
+      "shape": [
+        126025
+      ],
+      "dtype": "int64",
+      "sha256": "53ea5e37e699c08935222a6b94d36b7fb2fd391550a21980b62ca434a4fb57c1"
+    },
+    "measured_baseline_total": {
+      "shape": [
+        126025
+      ],
+      "dtype": "int64",
+      "sha256": "7f1684e47009881cd14842684119b156a06eedb8554e891de2197cb7554799c6"
+    },
+    "measured_test_total": {
+      "shape": [
+        126025
+      ],
+      "dtype": "int64",
+      "sha256": "169947290cda0d33642630f049330961221aac4d3e36447de60430299b68ff78"
+    },
+    "long_term_total": {
+      "shape": [
+        126025
+      ],
+      "dtype": "int64",
+      "sha256": "85be26e791341e3adaafd42725dad91c287646b7394924085ce558d4761dbd0b"
+    },
+    "measured_RTM": {
+      "shape": [
+        126025
+      ],
+      "dtype": "bool",
+      "sha256": "ea8bb4e3e2a008f6db34797e5efdc9cf3d91df67c88b7508f6d44cb9d654cff2"
+    },
+    "latent_RTM": {
+      "shape": [
+        126025
+      ],
+      "dtype": "bool",
+      "sha256": "3151b943ab91211786839312bc856f1d68333af29dd26fa811babce157be0d48"
+    }
+  }
+}

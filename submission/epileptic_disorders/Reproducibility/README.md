@@ -34,6 +34,29 @@ python reproduce_rtm3.py --n-patients 1000 --output-dir results_smoke --progress
 
 ## Sources and outputs
 
+### Additional paired participant analysis
+
+Reproduce the new measured-versus-latent classification analysis separately:
+
+```bash
+python rtm3_paired.py
+python scripts/validate_paired_type3.py
+python -m unittest discover -s tests -p test_rtm3_paired.py -v
+```
+
+The first command reuses the unchanged canonical latent generator, then replays all original nested detector-grid draws before retaining five distinct separate-sweep conditions. It writes only to `results/paired_type3/`; it does not execute the main-paper notebook or overwrite the released aggregate CSVs. The default compressed latent cache is retained in that directory for repeat runs. The summary CSV, compressed selected-participant audit, metadata, and validation report accompany the appendix. The paired analysis retains every participant selected by that condition's primary measured eligibility, including latent-ineligible participants and those with zero true baseline. Its measurement-only category covers the whole measurement/correction pipeline and is not exclusive biological attribution.
+
+To update the appendix from the saved results without running a simulation or touching Word:
+
+```bash
+python scripts/build_appendix_notebook.py --execute --kernel-transport inprocess
+python scripts/export_appendix.py --html-only --output-dir results/paired_appendix_export
+```
+
+The updated appendix HTML embeds its images, CSS, and native MathML and is self-contained. Current user-edited Word files require separate preservation-aware OOXML updates and authoritative Microsoft Word verification.
+
+### Existing analysis files
+
 - `reproduce_rtm3.py`: canonical simulation, eligibility, endpoints, diagnostics, validation, and Figure 1.
 - `realSim.py`: unchanged copy of the CHOCOLATE simulator source. Provenance and SHA-256 are recorded in the run metadata.
 - `rtm3_reporting.py`: notebook tables, comparison figures, interpretation, and conceptual Figure 2.

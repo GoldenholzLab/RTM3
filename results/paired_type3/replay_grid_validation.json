@@ -1,0 +1,212 @@
+[
+  {
+    "sweep": "sensitivity",
+    "sensitivity": 0.1,
+    "FAR": 0.0,
+    "n_selected": 2180,
+    "n_measured_RTM": 1404,
+    "expected_selected": 2180,
+    "expected_measured_RTM": 1404,
+    "exact_match": true
+  },
+  {
+    "sweep": "sensitivity",
+    "sensitivity": 0.2,
+    "FAR": 0.0,
+    "n_selected": 5955,
+    "n_measured_RTM": 3142,
+    "expected_selected": 5955,
+    "expected_measured_RTM": 3142,
+    "exact_match": true
+  },
+  {
+    "sweep": "sensitivity",
+    "sensitivity": 0.3,
+    "FAR": 0.0,
+    "n_selected": 9824,
+    "n_measured_RTM": 4761,
+    "expected_selected": 9824,
+    "expected_measured_RTM": 4761,
+    "exact_match": true
+  },
+  {
+    "sweep": "sensitivity",
+    "sensitivity": 0.4,
+    "FAR": 0.0,
+    "n_selected": 13845,
+    "n_measured_RTM": 6456,
+    "expected_selected": 13845,
+    "expected_measured_RTM": 6456,
+    "exact_match": true
+  },
+  {
+    "sweep": "sensitivity",
+    "sensitivity": 0.5,
+    "FAR": 0.0,
+    "n_selected": 17865,
+    "n_measured_RTM": 7949,
+    "expected_selected": 17865,
+    "expected_measured_RTM": 7949,
+    "exact_match": true
+  },
+  {
+    "sweep": "sensitivity",
+    "sensitivity": 0.6,
+    "FAR": 0.0,
+    "n_selected": 21790,
+    "n_measured_RTM": 9287,
+    "expected_selected": 21790,
+    "expected_measured_RTM": 9287,
+    "exact_match": true
+  },
+  {
+    "sweep": "sensitivity",
+    "sensitivity": 0.7,
+    "FAR": 0.0,
+    "n_selected": 25546,
+    "n_measured_RTM": 10454,
+    "expected_selected": 25546,
+    "expected_measured_RTM": 10454,
+    "exact_match": true
+  },
+  {
+    "sweep": "sensitivity",
+    "sensitivity": 0.8,
+    "FAR": 0.0,
+    "n_selected": 29093,
+    "n_measured_RTM": 11437,
+    "expected_selected": 29093,
+    "expected_measured_RTM": 11437,
+    "exact_match": true
+  },
+  {
+    "sweep": "sensitivity",
+    "sensitivity": 0.9,
+    "FAR": 0.0,
+    "n_selected": 32350,
+    "n_measured_RTM": 12378,
+    "expected_selected": 32350,
+    "expected_measured_RTM": 12378,
+    "exact_match": true
+  },
+  {
+    "sweep": "sensitivity",
+    "sensitivity": 1.0,
+    "FAR": 0.0,
+    "n_selected": 35393,
+    "n_measured_RTM": 13170,
+    "expected_selected": 35393,
+    "expected_measured_RTM": 13170,
+    "exact_match": true
+  },
+  {
+    "sweep": "FAR",
+    "sensitivity": 1.0,
+    "FAR": 0.0,
+    "n_selected": 35393,
+    "n_measured_RTM": 13170,
+    "expected_selected": 35393,
+    "expected_measured_RTM": 13170,
+    "exact_match": true
+  },
+  {
+    "sweep": "FAR",
+    "sensitivity": 1.0,
+    "FAR": 0.1,
+    "n_selected": 35453,
+    "n_measured_RTM": 14467,
+    "expected_selected": 35453,
+    "expected_measured_RTM": 14467,
+    "exact_match": true
+  },
+  {
+    "sweep": "FAR",
+    "sensitivity": 1.0,
+    "FAR": 0.2,
+    "n_selected": 35551,
+    "n_measured_RTM": 15616,
+    "expected_selected": 35551,
+    "expected_measured_RTM": 15616,
+    "exact_match": true
+  },
+  {
+    "sweep": "FAR",
+    "sensitivity": 1.0,
+    "FAR": 0.3,
+    "n_selected": 35437,
+    "n_measured_RTM": 16252,
+    "expected_selected": 35437,
+    "expected_measured_RTM": 16252,
+    "exact_match": true
+  },
+  {
+    "sweep": "FAR",
+    "sensitivity": 1.0,
+    "FAR": 0.4,
+    "n_selected": 35512,
+    "n_measured_RTM": 17045,
+    "expected_selected": 35512,
+    "expected_measured_RTM": 17045,
+    "exact_match": true
+  },
+  {
+    "sweep": "FAR",
+    "sensitivity": 1.0,
+    "FAR": 0.5,
+    "n_selected": 35508,
+    "n_measured_RTM": 17538,
+    "expected_selected": 35508,
+    "expected_measured_RTM": 17538,
+    "exact_match": true
+  },
+  {
+    "sweep": "FAR",
+    "sensitivity": 1.0,
+    "FAR": 0.6,
+    "n_selected": 35462,
+    "n_measured_RTM": 17998,
+    "expected_selected": 35462,
+    "expected_measured_RTM": 17998,
+    "exact_match": true
+  },
+  {
+    "sweep": "FAR",
+    "sensitivity": 1.0,
+    "FAR": 0.7,
+    "n_selected": 35372,
+    "n_measured_RTM": 18258,
+    "expected_selected": 35372,
+    "expected_measured_RTM": 18258,
+    "exact_match": true
+  },
+  {
+    "sweep": "FAR",
+    "sensitivity": 1.0,
+    "FAR": 0.8,
+    "n_selected": 35321,
+    "n_measured_RTM": 18422,
+    "expected_selected": 35321,
+    "expected_measured_RTM": 18422,
+    "exact_match": true
+  },
+  {
+    "sweep": "FAR",
+    "sensitivity": 1.0,
+    "FAR": 0.9,
+    "n_selected": 35224,
+    "n_measured_RTM": 18731,
+    "expected_selected": 35224,
+    "expected_measured_RTM": 18731,
+    "exact_match": true
+  },
+  {
+    "sweep": "FAR",
+    "sensitivity": 1.0,
+    "FAR": 1.0,
+    "n_selected": 35134,
+    "n_measured_RTM": 18845,
+    "expected_selected": 35134,
+    "expected_measured_RTM": 18845,
+    "exact_match": true
+  }
+]

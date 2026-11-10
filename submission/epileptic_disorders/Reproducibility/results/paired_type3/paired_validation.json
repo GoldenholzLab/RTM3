@@ -1,0 +1,83 @@
+{
+  "status": "PASS",
+  "method": "Independent Python integer inequalities applied to every saved selected record; no production classification helper imported.",
+  "records_checked": 126025,
+  "unique_conditions": 5,
+  "paired_cells_eligibility_correction_totals_reference_and_ratios_checked": true,
+  "Wilson_intervals_independently_checked_with_NormalDist": true,
+  "zero_true_baseline_and_latent_ineligible_retained": true,
+  "canonical_files_unchanged": true,
+  "conditions": [
+    {
+      "condition_id": 0,
+      "n_selected": 2180,
+      "n_both_RTM": 1124,
+      "n_measurement_only": 280,
+      "n_latent_only": 134,
+      "n_neither_RTM": 642,
+      "n_measured_RTM": 1404,
+      "n_latent_RTM": 1258,
+      "n_selected_latent_eligible": 2180,
+      "n_selected_latent_ineligible": 0,
+      "n_selected_zero_true_baseline": 0,
+      "all_stored_fractions_match": true
+    },
+    {
+      "condition_id": 1,
+      "n_selected": 17865,
+      "n_both_RTM": 6431,
+      "n_measurement_only": 1518,
+      "n_latent_only": 1053,
+      "n_neither_RTM": 8863,
+      "n_measured_RTM": 7949,
+      "n_latent_RTM": 7484,
+      "n_selected_latent_eligible": 17865,
+      "n_selected_latent_ineligible": 0,
+      "n_selected_zero_true_baseline": 0,
+      "all_stored_fractions_match": true
+    },
+    {
+      "condition_id": 2,
+      "n_selected": 35393,
+      "n_both_RTM": 13170,
+      "n_measurement_only": 0,
+      "n_latent_only": 0,
+      "n_neither_RTM": 22223,
+      "n_measured_RTM": 13170,
+      "n_latent_RTM": 13170,
+      "n_selected_latent_eligible": 35393,
+      "n_selected_latent_ineligible": 0,
+      "n_selected_zero_true_baseline": 0,
+      "all_stored_fractions_match": true
+    },
+    {
+      "condition_id": 3,
+      "n_selected": 35453,
+      "n_both_RTM": 11333,
+      "n_measurement_only": 3134,
+      "n_latent_only": 1698,
+      "n_neither_RTM": 19288,
+      "n_measured_RTM": 14467,
+      "n_latent_RTM": 13031,
+      "n_selected_latent_eligible": 30865,
+      "n_selected_latent_ineligible": 4588,
+      "n_selected_zero_true_baseline": 22,
+      "all_stored_fractions_match": true
+    },
+    {
+      "condition_id": 4,
+      "n_selected": 35134,
+      "n_both_RTM": 9470,
+      "n_measurement_only": 9375,
+      "n_latent_only": 2174,
+      "n_neither_RTM": 14115,
+      "n_measured_RTM": 18845,
+      "n_latent_RTM": 11644,
+      "n_selected_latent_eligible": 24042,
+      "n_selected_latent_ineligible": 11092,
+      "n_selected_zero_true_baseline": 1204,
+      "all_stored_fractions_match": true
+    }
+  ],
+  "participant_npz_sha256": "80e6dbfaca904e8231420dfc28bf432faaef31b4211762a9e144b84a9f7084b9"
+}
